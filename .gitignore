@@ -1,0 +1,22 @@
+# Compiled binaries
+/lildisc
+
+# Go build artifacts
+*.exe
+*.test
+*.out
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
+CLAUDE.md

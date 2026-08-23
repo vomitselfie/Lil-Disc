@@ -1,0 +1,17 @@
+[Desktop Entry]
+Name=LilDisc
+Version=1.0
+Type=Application
+Terminal=false
+GenericName=Discord chat client
+Comment=A native Discord client in Go and GTK4
+Exec=lildisc
+Icon=io.github.dijama.lildisc
+Categories=GNOME;GTK;Network;Chat;InstantMessaging;
+# Translators: Search terms to find this application. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
+Keywords=Discord;chat;irc;communications;talk;
+StartupNotify=true
+DBusActivatable=true
+StartupWMClass=io.github.dijama.lildisc
+X-GNOME-UsesNotifications=true
+X-Purism-FormFactor=Workstation;Mobile;

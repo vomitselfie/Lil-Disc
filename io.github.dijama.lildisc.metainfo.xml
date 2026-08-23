@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding='utf-8'?>
+<component type="desktop-application">
+  <id>io.github.dijama.lildisc</id>
+  <name>LilDisc</name>
+  <summary>Tiny native Discord app for Linux</summary>
+  <developer_name translatable="no">dijama</developer_name>
+  <launchable type="desktop-id">io.github.dijama.lildisc.desktop</launchable>
+  <translation type="gettext">lildisc</translation>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0+</project_license>
+
+  <description>
+    <p>
+      LilDisc is a third-party Discord client designed for a smooth, native
+      experience on Linux desktops.
+    </p>
+    <p>
+      Built with GTK4 and libadwaita for a modern look and feel, it delivers
+      a lightweight and visually appealing Discord app that integrates with
+      Wayland desktops.
+    </p>
+    <p>
+      LilDisc prioritizes simplicity and speed over feature parity with the
+      official client. Highlights:
+    </p>
+    <ul>
+      <li>Text chat with complete Markdown and custom emoji support</li>
+      <li>Guild folders, channel categories, and a tabbed chat interface</li>
+      <li>Quick switcher for channels and servers</li>
+      <li>Image, video, and file uploads with previews and downloads</li>
+      <li>Inline GIF/video playback and rich embeds</li>
+      <li>Drag-and-drop and clipboard image uploads</li>
+      <li>User theming via custom CSS</li>
+      <li>Resizable sidebar with optional compact avatar-only mode</li>
+      <li>Presence indicators, system tray, and message search</li>
+    </ul>
+    <p>
+      It does not aim to support voice chat, which is best handled by other
+      clients.
+    </p>
+  </description>
+
+  <url type="homepage">https://github.com/dijama/lildisc</url>
+  <url type="bugtracker">https://github.com/dijama/lildisc/issues</url>
+
+  <kudos>
+    <kudo>HiDpiIcon</kudo>
+    <kudo>ModernToolkit</kudo>
+  </kudos>
+
+  <recommends>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <control>touch</control>
+  </recommends>
+
+  <custom>
+    <value key="Purism::form_factor">mobile</value>
+  </custom>
+
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-chat">intense</content_attribute>
+    <content_attribute id="social-info">intense</content_attribute>
+    <content_attribute id="social-audio">intense</content_attribute>
+    <content_attribute id="social-contacts">intense</content_attribute>
+    <content_attribute id="money-purchasing">intense</content_attribute>
+  </content_rating>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#bcc3f8</color>
+    <color type="primary" scheme_preference="dark">#263396</color>
+  </branding>
+
+  <releases>
+    <release version="0.1.0" date="2026-04-08"/>
+  </releases>
+
+</component>

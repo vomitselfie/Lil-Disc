@@ -1,0 +1,415 @@
+name: Build and Publish
+
+on:
+  push:
+    branches-ignore:
+      - nightly
+  pull_request:
+  release:
+    types: [released] # Prevents double builds on nightly
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    # Use Nix for all of our build commands.
+    # Doing this will automatically run everything in our devShell.
+    shell: nix develop -c bash -e {0}
+
+jobs:
+  generate:
+    name: Run go generate
+    runs-on: ubuntu-latest
+    needs: gomod # avoid pushing at the same time as gomod
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Generate
+        run: go generate ./...
+
+      - name: Commit changes
+        uses: ./.github/actions/push-or-fail
+        with:
+          commit-message: Run go generate
+
+
+  gomod:
+    name: Validate Go modules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Tidy up Go modules
+        run: go mod tidy
+
+      - name: Update gomod2nix.toml
+        run: gomod2nix --outdir nix
+
+      - name: Commit changes
+        uses: ./.github/actions/push-or-fail
+        with:
+          commit-message: Tidy up Go modules
+          file-pattern: nix/gomod2nix.toml go.mod go.sum
+
+
+  lint:
+    name: Lint
+    needs: [gomod, generate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Format
+        run: |
+          fail=
+          go list -f '{{ .Dir }}' | while read -r d; do
+            goimports -l "$d" | while read -r f; do
+              fail=1
+              printf "::error file=%s::%s\n" "$d/$f" "File is not formatted"
+            done
+          done
+          [[ -z "$fail" ]]
+
+      - name: Vet
+        run: go vet ./... |& workflowify -e -t vet
+
+      - name: Staticcheck (warnings)
+        run: nix run .#staticcheck ./... || true |& workflowify -w -t staticcheck
+
+      - name: Test
+        run: go test -v ./...
+
+
+  build-source:
+    name: Build source tarball
+    needs: [gomod, generate]
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.build.outputs.name }}
+      directory: ${{ steps.build.outputs.directory }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Build
+        id: build
+        run: |
+          nix build --file ./. lib.mkSource \
+            --argstr version "$(git-version)"
+
+          echo name=$(ls result) >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build.outputs.name }}
+          path: result
+
+
+  build-linux:
+    name: Build for Linux (via Nix)
+    needs: [gomod, generate]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        target:
+          - x86_64-linux
+          - aarch64-linux
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Build
+        id: build
+        run: |
+          nix build --file ./. lib.mkPackageCross \
+            --argstr version "" \
+            --argstr target  "${{ matrix.target }}"
+
+          echo name=$(ls result) >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build.outputs.name }}
+          path: result
+
+
+  build-windows:
+    name: Build for Windows
+    needs: [gomod, generate]
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Build using MSYS2
+        uses: ./.github/actions/build-msys2-app
+        with:
+          msys-dependencies: |
+            mingw-w64-x86_64-gcc 
+            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-gtk4
+            mingw-w64-x86_64-libadwaita
+            mingw-w64-x86_64-gobject-introspection
+            mingw-w64-x86_64-glib2
+            mingw-w64-x86_64-go
+          out-path: ${{ runner.temp }}/exe
+          exe-name: lildisc.exe
+          build-tags: nogtksource
+
+      - name: Prepare
+        id: prepare
+        run: |
+          version=$(.github/tools/git-version)
+
+          # version is usually in the format vMAJOR.MINOR.PATCH-N-HASH, while
+          # Advanced Installer only allows format MAJOR.MINOR.PATCH.REVISION.
+          # We trim out our hash, trim the leading v, and replace the first - with a .
+          if [[ $version =~ ^v([0-9]+\.[0-9]+\.[0-9]+(-[0-9]+)?) ]]; then
+            version=${BASH_REMATCH[1]}
+            version=${version//-/.}
+          else
+            # Use some fallback version. Realistically, this should never
+            # happen, so we throw a warning.
+            version=0.0.0.999
+            echo '::warning::Could not determine version from git for Windows build. Using `$version`'
+          fi
+
+          cat<<EOF >> "$GITHUB_OUTPUT"
+          version=$version
+          name=lildisc-windows-amd64
+          EOF
+
+      - name: Make MSI installer
+        uses: ./.github/actions/make-advinst-app
+        with:
+          aip-file: nix/lildisc-windows.aip
+          exe-directory: ${{ runner.temp }}/exe
+          exe-name: lildisc.exe
+          app-name: LilDisc
+          app-version: ${{ steps.prepare.outputs.version }}
+          icon-file: internal/icons/windows/lildisc.ico
+          out-path: result
+          out-name: ${{ steps.prepare.outputs.name }}.msi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.prepare.outputs.name }}
+          path: result
+
+
+  build-macos:
+    name: Build for macOS (experimental)
+    needs: [gomod, generate]
+    runs-on: macos-latest
+    # Never blocks a release. This build has not been run on real hardware and
+    # macOS is not a supported platform: the system tray and notifications go
+    # through D-Bus, which does not exist there, and the artifact is a bare
+    # binary that still needs Homebrew's GTK at runtime rather than a bundled
+    # .app. It is here to find out whether the code still compiles on Darwin,
+    # not to ship a macOS release.
+    continue-on-error: true
+    defaults:
+      run:
+        # Override the workflow-level `nix develop` shell: this job builds
+        # against Homebrew.
+        shell: bash -e {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install GTK
+        run: brew install gtk4 libadwaita pkg-config
+
+      - name: Build
+        id: build
+        run: |
+          export PKG_CONFIG_PATH="$(brew --prefix)/lib/pkgconfig:$PKG_CONFIG_PATH"
+          mkdir -p result
+
+          # nogtksource drops the GtkSourceView composer and gspell checking,
+          # exactly as the Windows build does, so gtk4 and libadwaita are the
+          # only Homebrew dependencies needed.
+          go build -tags nogtksource -o result/lildisc .
+
+          echo "name=lildisc-macos-$(uname -m)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build.outputs.name }}
+          path: result
+
+
+  upload-release:
+    name: Upload artifacts to release
+    needs: [build-source, build-linux, build-windows, build-macos]
+    environment: Stable release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    concurrency:
+      group: release-${{ github.workflow }}-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Upload artifacts to GitHub Releases
+        uses: diamondburned/action-upload-release@main
+        with:
+          files: artifacts
+
+
+  auto-release:
+    name: Publish release for master
+    needs: [build-source, build-linux, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+    concurrency:
+      group: auto-release-${{ github.ref }}
+      cancel-in-progress: false
+    defaults:
+      run:
+        # Plain bash: this job only moves files around and needs no devShell.
+        shell: bash -e {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/artifacts
+
+      - name: Collect built artifacts
+        run: mkdir /tmp/bin && find /tmp/artifacts -type f -exec mv {} /tmp/bin/ \;
+
+      - name: Compute version
+        id: version
+        run: |
+          # Date-based, because the repository carries no semver tags to count
+          # from — `git describe` would otherwise produce names derived from
+          # the rolling `nightly` tag. The run number keeps same-day pushes
+          # distinct and always increasing.
+          echo "tag=v$(date -u +%Y.%m.%d).${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: LilDisc ${{ steps.version.outputs.tag }}
+          body: |
+            Automatic release built from `master` (${{ github.sha }}).
+          generate_release_notes: true
+          make_latest: true
+          files: /tmp/bin/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+  nightly-release:
+    name: Update nightly release
+    needs: [build-source, build-linux, build-windows, build-macos]
+    environment: Nightly release
+    runs-on: ubuntu-latest
+    # Superseded by auto-release above, which publishes a real versioned
+    # release on every master push. Left in place but disabled rather than
+    # deleted, so the rolling `nightly` tag and its download links stay valid.
+    if: false
+    concurrency:
+      group: nightly-${{ github.workflow }}-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/artifacts
+
+      - name: Collect built artifacts
+        run: mkdir /tmp/bin && find /tmp/artifacts -type f -exec mv {} /tmp/bin/ \;
+
+      - name: Generate Nightly release notes
+        id: generate-notes
+        run: |
+          versionJSON=$(nightly-info)
+          version() { jq -r ".$1" <<< "$versionJSON"; }
+
+          body=$(cat<<EOF
+          This is a nightly release of LilDisc. It is built from the latest
+          commit on the `main` branch.
+
+          **Warning:** This release is not guaranteed to be stable and may
+          contain bugs. Use at your own risk. Please report any issues you
+          encounter as separate GitHub Issues.
+
+          ### Version Information
+
+          - LilDisc: $(version lildisc)
+          - Go: $(version go)
+          - GTK: $(version gtk4)
+          - Libadwaita: $(version libadwaita1)
+          EOF)
+
+          echo "body=$(jq --null-input --arg body "$body" '$body')" >> $GITHUB_OUTPUT
+        env:
+          VERSIONS: ${{ needs.build.outputs.versions }}
+
+      - name: Update Nightly release
+        uses: andelf/nightly-release@ce2d0a30db8cf9f3920a4237d6a0b874400710c1
+        with:
+          name: Nightly Release
+          body: ${{ fromJSON(steps.generate-notes.outputs.body) }}
+          tag_name: nightly
+          prerelease: true
+          files: /tmp/bin/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
