@@ -154,6 +154,24 @@ use the REST API at all unless necessary to reduce the risk of abuse, it is
 still possible that Discord may ban your account for using it. Please use
 LilDisc at your own risk!
 
+## Troubleshooting
+
+### Preference toggles are invisible (Manjaro Sway, Matcha themes)
+
+Manjaro's Sway edition copies the active GTK theme's `gtk-4.0/gtk.css` into
+`~/.config/gtk-4.0/`, and GTK applies that file on top of libadwaita. Matcha
+draws switches entirely from PNGs in an `assets` directory that the theme
+ships as a relative symlink, which dangles once copied out of
+`/usr/share/themes`. The switches then have no background, so you cannot tell
+whether a setting is on or off. Point the missing directory at the theme:
+
+```bash
+ln -sfn /usr/share/themes/Matcha-dark-aliz/gtk-3.0/assets ~/.config/gtk-3.0/assets
+```
+
+Substitute your Matcha variant. This makes the copied `../gtk-3.0/assets` link
+resolve, so it survives the theme script re-running at login.
+
 ## Credits
 
 LilDisc began as a fork of [Dissent](https://github.com/diamondburned/dissent) by diamondburned, and still shares its rendering core.
