@@ -34,23 +34,51 @@ import (
 	"github.com/diamondburned/ningen/v3"
 	"github.com/diamondburned/ningen/v3/discordmd"
 	"github.com/dijama/lildisc/internal/colorhash"
+	"github.com/dijama/lildisc/internal/discordident"
 	"github.com/dijama/lildisc/internal/signaling"
 
 	coreglib "github.com/diamondburned/gotk4/pkg/core/glib"
 )
 
-func init() {
-	hostname, err := os.Hostname()
-	if err != nil {
-		hostname = "PC"
+// InitClientIdentity installs the identity LilDisc presents to Discord: the
+// REST User-Agent and the gateway IDENTIFY properties.
+//
+// This used to be an init function that announced the client by name and
+// reported the gateway device as "Arikawa". That pair is the shape Discord's
+// abuse tooling uses to separate automated clients from the official app, and
+// it is scored hardest on attachment uploads, where it surfaced as ordinary
+// image uploads being treated as spam. See package discordident.
+//
+// It must run before any state is constructed, and after main has loaded
+// ~/.config/lildisc/env, since that file can override the version constants.
+// It is therefore called explicitly from main rather than from an init.
+func InitClientIdentity() {
+	ident := discordident.Get()
+
+	api.UserAgent = ident.UserAgent
+
+	if !ident.Enabled {
+		// Honest mode. Keep arikawa's own shape rather than half-spoofing:
+		// a partial disguise is a stronger tell than none.
+		hostname, err := os.Hostname()
+		if err != nil {
+			hostname = "PC"
+		}
+		gateway.DefaultIdentity = gateway.IdentifyProperties{
+			gateway.IdentifyOS:      runtime.GOOS,
+			gateway.IdentifyDevice:  "Arikawa",
+			gateway.IdentifyBrowser: "LilDisc on " + hostname,
+		}
+		return
 	}
 
-	api.UserAgent = "LilDisc (https://github.com/dijama/lildisc)"
-	gateway.DefaultIdentity = gateway.IdentifyProperties{
-		gateway.IdentifyOS:      runtime.GOOS,
-		gateway.IdentifyDevice:  "Arikawa",
-		gateway.IdentifyBrowser: "LilDisc on " + hostname,
+	// The socket must report what the HTTP header reports, so both are built
+	// from the one payload rather than from two hand-maintained literals.
+	identity := gateway.IdentifyProperties{}
+	for key, value := range ident.Properties {
+		identity[gateway.IdentifyPropertyKey(key)] = value
 	}
+	gateway.DefaultIdentity = identity
 }
 
 // AllowedChannelTypes are the channel types that are shown.
@@ -91,9 +119,14 @@ func FromContext(ctx context.Context) *State {
 // Wrap wraps the given state.
 func Wrap(state *state.State) *State {
 	c := state.Client.Client
+
+	// Arikawa sets Authorization and User-Agent, and nothing else. Discord's
+	// own clients also send X-Super-Properties and X-Discord-Locale on every
+	// call, and a user token without them reads as automated. See the
+	// discordident package for what goes in them and how to refresh it.
+	identHeader := discordident.Get().Header()
 	c.OnRequest = append(c.OnRequest, func(r httpdriver.Request) error {
-		// req := (*http.Request)(r.(*httpdriver.DefaultRequest))
-		// log.Println("Discord API:", req.Method, req.URL.Path)
+		r.AddHeader(identHeader)
 		return nil
 	})
 	c.OnResponse = append(c.OnResponse, func(dreq httpdriver.Request, dresp httpdriver.Response) error {
@@ -179,6 +212,7 @@ func (s *State) FetchMeFromAPI() *discord.User {
 		return nil
 	}
 	req.Header.Set("Authorization", s.Token())
+	discordident.Get().Apply(req)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -309,6 +343,7 @@ func (s *State) FetchFriendNicknames() {
 		return
 	}
 	req.Header.Set("Authorization", s.Token())
+	discordident.Get().Apply(req)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

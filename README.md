@@ -114,6 +114,41 @@ Everything below is optional. Open **Preferences → Mods** and flip switches.
 
 ## Troubleshooting
 
+### My uploads keep getting treated as spam
+
+Discord scores how much a client looks like software rather than a person, and
+it scores hardest on attachments, because uploads are how malware and
+unsolicited imagery get spread. Two things used to push LilDisc over that line,
+and both are fixed:
+
+- **How the client introduced itself.** Every request said it was LilDisc, and
+  the gateway reported the device as a Go library. The real app sends a browser
+  user agent and an `X-Super-Properties` header describing the build. LilDisc
+  now sends both, on every request, including the raw ones that skip the
+  library.
+- **What uploaded files were called.** With **Randomize Upload Filenames** on,
+  every image was renamed to sixteen random characters, which is exactly what
+  bulk spam looks like. It now produces names a real device would write, like
+  `IMG_4821.jpg` or `Screenshot_20260920_143211.png`. Pasted images are called
+  `image.png`, which is what Discord's own clients call them.
+
+The version numbers LilDisc reports go stale as Discord ships updates, and a
+build number far behind the current release is itself conspicuous. Refresh them
+in `~/.config/lildisc/env` without rebuilding:
+
+```sh
+LILDISC_CLIENT_VERSION=0.0.140
+LILDISC_CLIENT_BUILD_NUMBER=421337
+LILDISC_NATIVE_BUILD_NUMBER=70201
+LILDISC_CHROME_VERSION=152.0.7014.35
+LILDISC_ELECTRON_VERSION=39.1.2
+```
+
+To read the current values, open the official client or the web app with
+developer tools, pick any request to `discord.com/api`, and copy its user agent
+and the `X-Super-Properties` value. Setting `LILDISC_CLIENT_IDENTITY=off`
+returns to identifying honestly as LilDisc, which is the flagged behaviour.
+
 ### The switches in Preferences are invisible (Manjaro Sway with a Matcha theme)
 
 Manjaro's Sway edition copies the active GTK theme's `gtk-4.0/gtk.css` into

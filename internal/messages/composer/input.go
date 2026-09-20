@@ -331,8 +331,11 @@ func (i *Input) readClipboard() {
 			// being called more than once.
 			var openedOnce atomic.Bool
 
+			// "image" rather than "clipboard": this is what Discord's own
+			// clients name a pasted image, and an attachment name no other
+			// client produces is one more thing marking uploads as automated.
 			file := &File{
-				Name: "clipboard",
+				Name: "image",
 				Type: typ,
 				Size: s.Size(),
 				Open: func() (io.ReadCloser, error) {
@@ -343,11 +346,45 @@ func (i *Input) readClipboard() {
 				},
 			}
 
-			if exts, _ := mime.ExtensionsByType(typ); len(exts) > 0 {
-				file.Name += exts[0]
-			}
+			file.Name += clipboardExtension(typ)
 
 			return func() { i.ctrl.PasteClipboardFile(file) }
 		})
 	})
+}
+
+// clipboardExtension picks the file extension for a pasted MIME type.
+//
+// mime.ExtensionsByType returns every registered extension in sorted order,
+// so image/jpeg leads with ".jpe" and image/svg+xml with ".svg" only by luck.
+// Nothing writes ".jpe", so falling back to that marks an upload as machine
+// made. The common types are therefore spelled out, and the sorted list is
+// only a fallback for everything else.
+func clipboardExtension(mimeType string) string {
+	mimeType, _, _ = strings.Cut(mimeType, ";")
+	mimeType = strings.ToLower(strings.TrimSpace(mimeType))
+
+	switch mimeType {
+	case "image/jpeg", "image/jpg":
+		return ".jpg"
+	case "image/png":
+		return ".png"
+	case "image/gif":
+		return ".gif"
+	case "image/webp":
+		return ".webp"
+	case "image/avif":
+		return ".avif"
+	case "image/bmp":
+		return ".bmp"
+	case "image/tiff":
+		return ".tiff"
+	case "image/svg+xml":
+		return ".svg"
+	}
+
+	if exts, _ := mime.ExtensionsByType(mimeType); len(exts) > 0 {
+		return exts[0]
+	}
+	return ""
 }

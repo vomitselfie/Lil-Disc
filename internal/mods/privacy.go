@@ -3,18 +3,23 @@ package mods
 import (
 	"bytes"
 	"crypto/rand"
-	"encoding/hex"
+	"fmt"
 	"io"
+	"math/big"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/diamondburned/gotkit/app/prefs"
 )
 
 var enableRandomFilenames = prefs.NewBool(false, prefs.PropMeta{
-	Name:        "Randomize Upload Filenames",
-	Section:     "Mods",
-	Description: "Replace original filenames with random strings before uploading. May violate Discord's Terms of Service.",
+	Name:    "Randomize Upload Filenames",
+	Section: "Mods",
+	Description: "Replace original filenames before uploading with ones in the " +
+		"style a camera or screenshot tool produces, such as IMG_4821.jpg. " +
+		"Hides names that identify you without making uploads look automated. " +
+		"May violate Discord's Terms of Service.",
 })
 
 var enableStripMetadata = prefs.NewBool(false, prefs.PropMeta{
@@ -23,8 +28,20 @@ var enableStripMetadata = prefs.NewBool(false, prefs.PropMeta{
 	Description: "Remove EXIF, GPS, and camera info from JPEG/PNG images before uploading. May violate Discord's Terms of Service.",
 })
 
-// RandomizeFilename replaces the filename with a random hex string,
-// preserving the original extension and any SPOILER_ prefix.
+// RandomizeFilename discards the original filename, which can carry a real
+// name, a project, or a camera's serial, and replaces it with one of the
+// shapes an ordinary device produces. The extension and any SPOILER_ prefix
+// are preserved.
+//
+// The replacement used to be sixteen characters of random hex. That defeats
+// the purpose it was added for: a filename with no human structure is what
+// bulk spam and malware uploads look like, and Discord scores attachment
+// filenames. Naming the file the way a phone or a screenshot tool would keeps
+// the original name hidden without making every upload look automated.
+//
+// The names are plausible rather than truthful. The counter in IMG_ does not
+// count, and the clock in a screenshot name is not when the shot was taken.
+// Both only have to look like something a device wrote.
 func RandomizeFilename(name string) string {
 	if !enableRandomFilenames.Value() {
 		return name
@@ -38,9 +55,50 @@ func RandomizeFilename(name string) string {
 
 	ext := filepath.Ext(name)
 
-	b := make([]byte, 8)
-	rand.Read(b)
-	return prefix + hex.EncodeToString(b) + ext
+	return prefix + plausibleStem(ext) + ext
+}
+
+// plausibleStem builds a filename stem in the house style of whatever device
+// usually produces that kind of file.
+func plausibleStem(ext string) string {
+	// Today's date, with a time of day chosen at random. A screenshot or
+	// photo taken earlier today is the ordinary case, and a real timestamp
+	// would leak when the file was actually sent.
+	stamp := func(sep string) string {
+		day := time.Now().Format("20060102")
+		secs := randInt(24 * 60 * 60)
+		return day + sep + fmt.Sprintf("%02d%02d%02d", secs/3600, (secs/60)%60, secs%60)
+	}
+
+	switch strings.ToLower(ext) {
+	case ".png":
+		// GNOME, KDE and Windows all name screenshots this way, and a PNG
+		// from a desktop is usually a screenshot.
+		return "Screenshot_" + stamp("_")
+	case ".jpg", ".jpeg", ".heic":
+		// Camera roll. Real cameras use a four-digit sequence counter.
+		return fmt.Sprintf("IMG_%04d", randInt(10000))
+	case ".mp4", ".mov", ".webm", ".mkv":
+		return "VID_" + stamp("_")
+	case ".gif", ".webp":
+		// Saved from a browser, where a short lowercase stem is the norm.
+		return fmt.Sprintf("image_%04d", randInt(10000))
+	case ".mp3", ".ogg", ".opus", ".wav", ".flac", ".m4a":
+		return fmt.Sprintf("audio_%04d", randInt(10000))
+	default:
+		return fmt.Sprintf("file_%04d", randInt(10000))
+	}
+}
+
+// randInt returns a uniform value in [0, n) from the system CSPRNG, falling
+// back to zero if it is unavailable. The value is cosmetic, so a predictable
+// fallback is harmless; what matters is that the original name is gone.
+func randInt(n int) int {
+	v, err := rand.Int(rand.Reader, big.NewInt(int64(n)))
+	if err != nil {
+		return 0
+	}
+	return int(v.Int64())
 }
 
 // StripImageMetadata wraps a file's Open function to strip EXIF and other

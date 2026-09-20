@@ -20,6 +20,7 @@ import (
 	"github.com/diamondburned/gotkit/components/onlineimage"
 	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
+	"github.com/dijama/lildisc/internal/discordident"
 	"github.com/dijama/lildisc/internal/gtkcord"
 )
 
@@ -128,6 +129,7 @@ func fetchGuildStickers(token string, guildID discord.GuildID) ([]guildSticker, 
 		return nil, err
 	}
 	req.Header.Set("Authorization", token)
+	discordident.Get().Apply(req)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
@@ -166,7 +168,7 @@ func InvalidateStickerCache(guildID discord.GuildID) {
 // POST to the Discord API.
 func SendSticker(token string, channelID discord.ChannelID, stickerID discord.StickerID, ref *discord.MessageReference) error {
 	type stickerMessage struct {
-		StickerIDs []discord.StickerID      `json:"sticker_ids"`
+		StickerIDs []discord.StickerID       `json:"sticker_ids"`
 		Reference  *discord.MessageReference `json:"message_reference,omitempty"`
 	}
 
@@ -184,6 +186,7 @@ func SendSticker(token string, channelID discord.ChannelID, stickerID discord.St
 		return err
 	}
 	req.Header.Set("Authorization", token)
+	discordident.Get().Apply(req)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := httpClient.Do(req)
@@ -202,9 +205,9 @@ func SendSticker(token string, channelID discord.ChannelID, stickerID discord.St
 
 // defaultStickerPack is a standard Discord sticker pack from /sticker-packs.
 type defaultStickerPack struct {
-	ID       string          `json:"id"`
-	Name     string          `json:"name"`
-	Stickers []guildSticker  `json:"stickers"`
+	ID       string         `json:"id"`
+	Name     string         `json:"name"`
+	Stickers []guildSticker `json:"stickers"`
 }
 
 type stickerPacksResponse struct {
@@ -239,6 +242,7 @@ func fetchDefaultStickerPacks(token string) []defaultStickerPack {
 		return nil
 	}
 	req.Header.Set("Authorization", token)
+	discordident.Get().Apply(req)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {

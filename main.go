@@ -177,6 +177,12 @@ func main() {
 	loadEnvFile()
 	applyGraphicsPrefs()
 
+	// After loadEnvFile, because the client version and build numbers it
+	// installs can be overridden from that file, and before any Discord
+	// state is constructed, because arikawa reads them as it builds the
+	// REST client and the gateway.
+	gtkcord.InitClientIdentity()
+
 	m := manager{}
 	m.app = app.New(context.Background(), "io.github.dijama.lildisc", "LilDisc")
 	m.app.AddJSONActions(map[string]interface{}{
