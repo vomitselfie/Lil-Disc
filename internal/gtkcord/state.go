@@ -763,8 +763,44 @@ func hashUserColor(user *discord.User) string {
 // mid-sentence.
 var blockquoteConcatFix = regexp.MustCompile(`(\S)> `)
 
+// ForwardedSnapshot returns the message carried inside m as a forward, or nil
+// if m is not one.
+//
+// Discord models a forward as a reference of type Forward plus a snapshot of
+// the message as it stood when it was forwarded. That snapshot is the only
+// copy of the content the client is given: the outer message's own Content,
+// Embeds, Attachments and Stickers are all empty, and the reference points
+// into a channel the account often cannot read, so resolving it fails.
+//
+// A snapshot is only ever attached to a forward, so its presence is the test.
+// The reference type is checked too, but only to rule a message out, since a
+// forward arriving without one would otherwise be treated as having no content.
+func ForwardedSnapshot(m *discord.Message) *discord.MessageSnapshotMessage {
+	if len(m.MessageSnapshots) == 0 {
+		return nil
+	}
+	if m.Reference != nil && m.Reference.Type != discord.MessageReferenceTypeForward {
+		return nil
+	}
+	return &m.MessageSnapshots[0].Message
+}
+
 // MessagePreview renders the message into a short content string.
 func (s *State) MessagePreview(msg *discord.Message) string {
+	// A forward holds none of its own content, so previewing it directly
+	// yields an empty string and the message vanishes from the channel list
+	// and from any reply quoting it. Preview what was forwarded instead.
+	if snapshot := ForwardedSnapshot(msg); snapshot != nil {
+		forwarded := *msg
+		forwarded.Content = snapshot.Content
+		forwarded.Embeds = snapshot.Embeds
+		forwarded.Attachments = snapshot.Attachments
+		forwarded.Stickers = snapshot.Stickers
+		forwarded.Mentions = snapshot.Mentions
+		forwarded.MentionRoleIDs = snapshot.MentionRoleIDs
+		msg = &forwarded
+	}
+
 	b := strings.Builder{}
 	b.Grow(len(msg.Content))
 

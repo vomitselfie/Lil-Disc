@@ -38,6 +38,11 @@ type Content struct {
 	react  *contentReactions
 	child  []gtk.Widgetter
 
+	// appendTo redirects append while a forwarded message's body is being
+	// built, so the whole forwarded block lands inside one bordered box
+	// rather than flat among the sender's own widgets. nil means c.Box.
+	appendTo *gtk.Box
+
 	chID  discord.ChannelID
 	msgID discord.MessageID
 }
@@ -76,6 +81,21 @@ var contentCSS = cssutil.Applier("message-content-box", `
 	.message-interaction-name {
 		margin-left: 0.25em;
 		font-family: monospace;
+	}
+	/* Forwarded messages. Discord sets the forwarded body apart with a rule
+	   down its left edge and a muted label above it, so that a forward is
+	   never mistaken for something the sender wrote. */
+	.message-forward-header {
+		color: @lil_text_faint;
+		font-size: {$font_small};
+		margin-bottom: 1px;
+	}
+	.message-forward-header image {
+		margin-right: {$space_xs};
+	}
+	.message-forward-body {
+		border-left: 2px solid @lil_border_strong;
+		padding-left: {$space_md};
 	}
 `)
 
@@ -174,7 +194,41 @@ func (c *Content) Update(m *discord.Message, customs ...gtk.Widgetter) {
 
 	state := gtkcord.FromContext(c.ctx)
 
-	if m.Reference != nil {
+	// mod: forwards — a forward carries none of its own content. Discord puts
+	// the text, attachments and embeds in a snapshot taken when it was
+	// forwarded, leaves the outer message's fields empty, and points the
+	// reference at the original, which is usually in a channel this account
+	// cannot read. Rendering the outer message alone therefore produced an
+	// empty body under a stray "Unknown message." from the reply box.
+	//
+	// Everything below renders `body` rather than `m`. The two differ only
+	// for a forward; `m` stays the message that owns the reactions and the
+	// context menu.
+	body := m
+	if snapshot := gtkcord.ForwardedSnapshot(m); snapshot != nil {
+		c.append(newForwardHeader())
+
+		forwardBody := gtk.NewBox(gtk.OrientationVertical, 0)
+		forwardBody.AddCSSClass("message-forward-body")
+		c.append(forwardBody)
+		c.appendTo = forwardBody
+
+		forwarded := *m
+		forwarded.Content = snapshot.Content
+		forwarded.Embeds = snapshot.Embeds
+		forwarded.Attachments = snapshot.Attachments
+		forwarded.Stickers = snapshot.Stickers
+		forwarded.Mentions = snapshot.Mentions
+		forwarded.MentionRoleIDs = snapshot.MentionRoleIDs
+		// Keep the outer Type: it is always Default for a forward, and the
+		// system-message switch below indexes Mentions for some types.
+		//
+		// Drop the reference so the reply box is not also drawn; it points at
+		// the forwarded-from message, not at something being replied to.
+		forwarded.Reference = nil
+
+		body = &forwarded
+	} else if m.Reference != nil {
 		w := c.newReplyBox(m)
 		c.append(w)
 	}
@@ -249,8 +303,8 @@ func (c *Content) Update(m *discord.Message, customs ...gtk.Widgetter) {
 
 	// We render a big content if the content itself is literally a Unicode
 	// emoji.
-	case m.Content != "" && md.IsUnicodeEmoji(m.Content):
-		l := gtk.NewLabel(m.Content)
+	case body.Content != "" && md.IsUnicodeEmoji(body.Content):
+		l := gtk.NewLabel(body.Content)
 		l.SetAttributes(gtkcord.EmojiAttrs)
 		l.SetHExpand(true)
 		l.SetXAlign(0)
@@ -261,11 +315,11 @@ func (c *Content) Update(m *discord.Message, customs ...gtk.Widgetter) {
 
 	// We don't render the message content if all it is is the URL to the
 	// embedded image, because that's what the official client does.
-	case m.Content != "" &&
-		!(len(m.Embeds) == 1 && m.Embeds[0].Type == discord.ImageEmbed && m.Embeds[0].URL == m.Content):
+	case body.Content != "" &&
+		!(len(body.Embeds) == 1 && body.Embeds[0].Type == discord.ImageEmbed && body.Embeds[0].URL == body.Content):
 
-		src := []byte(m.Content)
-		node := discordmd.ParseWithMessage(src, *state.Cabinet, m, true)
+		src := []byte(body.Content)
+		node := discordmd.ParseWithMessage(src, *state.Cabinet, body, true)
 
 		c.mdview = mdrender.NewMarkdownViewer(
 			ctxt.With(c.ctx, newMarkdownState()),
@@ -285,30 +339,35 @@ func (c *Content) Update(m *discord.Message, customs ...gtk.Widgetter) {
 		c.append(c.mdview)
 	}
 
-	for i := range m.Stickers {
-		v := newSticker(c.ctx, &m.Stickers[i])
+	for i := range body.Stickers {
+		v := newSticker(c.ctx, &body.Stickers[i])
 		c.append(v)
 	}
 
-	for i := range m.Attachments {
-		v := newAttachment(c.ctx, &m.Attachments[i])
+	for i := range body.Attachments {
+		v := newAttachment(c.ctx, &body.Attachments[i])
 		c.append(v)
 	}
 
 	// mod: embeds — group consecutive embeds with the same URL (e.g. Twitter
 	// multi-image posts) so extra images render inside the first embed's card.
-	for i := 0; i < len(m.Embeds); i++ {
+	for i := 0; i < len(body.Embeds); i++ {
 		// Collect consecutive image-bearing embeds that share a URL.
-		group := mods.GroupEmbeds(m.Embeds, i)
+		group := mods.GroupEmbeds(body.Embeds, i)
 		if len(group) > 1 {
-			v := newEmbedGroup(c.ctx, m, group)
+			v := newEmbedGroup(c.ctx, body, group)
 			c.append(v)
 			i += len(group) - 1 // skip grouped embeds
 		} else {
-			v := newEmbed(c.ctx, m, &m.Embeds[i])
+			v := newEmbed(c.ctx, body, &body.Embeds[i])
 			c.append(v)
 		}
 	}
+
+	// End of the forwarded block, if there was one. What follows belongs to
+	// this message rather than the one it quotes: the upload progress label
+	// and the reactions are the sender's own.
+	c.appendTo = nil
 
 	for _, custom := range customs {
 		c.append(custom)
@@ -316,6 +375,28 @@ func (c *Content) Update(m *discord.Message, customs ...gtk.Widgetter) {
 
 	c.SetReactions(m.Reactions)
 	c.setMenu()
+}
+
+// newForwardHeader builds the muted "Forwarded" line that sits above a
+// forwarded body, so a forward is never read as something the sender wrote.
+//
+// There is no author to name: Discord omits one from the snapshot, which is
+// why this says only that the message was forwarded.
+func newForwardHeader() gtk.Widgetter {
+	box := gtk.NewBox(gtk.OrientationHorizontal, 0)
+	box.AddCSSClass("message-forward-header")
+	box.SetHAlign(gtk.AlignStart)
+
+	icon := gtk.NewImageFromIconName("mail-forward-symbolic")
+	icon.SetPixelSize(12)
+
+	label := gtk.NewLabel(locale.Get("Forwarded"))
+	label.SetXAlign(0)
+
+	box.Append(icon)
+	box.Append(label)
+
+	return box
 }
 
 func (c *Content) newReplyBox(m *discord.Message) gtk.Widgetter {
@@ -554,6 +635,13 @@ func (c *Content) newInteractionBox(m *discord.Message) gtk.Widgetter {
 }
 
 func (c *Content) append(w gtk.Widgetter) {
+	// Widgets inside a forwarded body belong to the box holding it, which is
+	// itself tracked in c.child, so clear() still takes the whole thing down.
+	if c.appendTo != nil {
+		c.appendTo.Append(w)
+		return
+	}
+
 	c.Box.Append(w)
 	c.child = append(c.child, w)
 }
@@ -566,6 +654,10 @@ func (c *Content) SetCustomChild(child ...gtk.Widgetter) {
 }
 
 func (c *Content) clear() {
+	// Reset the redirect first: a panic part-way through rendering a forward
+	// leaves it set, and the recovery path calls clear then appends again.
+	c.appendTo = nil
+
 	for i, child := range c.child {
 		c.Box.Remove(child)
 		c.child[i] = nil

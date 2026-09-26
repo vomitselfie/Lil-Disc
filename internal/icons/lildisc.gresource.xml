@@ -18,6 +18,7 @@
     <file preprocess="xml-stripblanks" alias="folder-visiting-symbolic.svg">scalable/actions/folder-visiting-symbolic.svg</file>
     <file preprocess="xml-stripblanks" alias="group-symbolic.svg">scalable/actions/group-symbolic.svg</file>
     <file preprocess="xml-stripblanks" alias="list-add-symbolic.svg">scalable/actions/list-add-symbolic.svg</file>
+    <file preprocess="xml-stripblanks" alias="mail-forward-symbolic.svg">scalable/actions/mail-forward-symbolic.svg</file>
     <file preprocess="xml-stripblanks" alias="mail-reply-sender-symbolic.svg">scalable/actions/mail-reply-sender-symbolic.svg</file>
     <file preprocess="xml-stripblanks" alias="menu-large-symbolic.svg">scalable/actions/menu-large-symbolic.svg</file>
     <file preprocess="xml-stripblanks" alias="online-symbolic.svg">scalable/actions/online-symbolic.svg</file>

@@ -66,6 +66,21 @@ func renderEmoji(ctx context.Context, r *mdrender.Renderer, n ast.Node) ast.Walk
 	}
 
 	if emoji.Large {
+		// discordmd marks emoji Large only when the message is nothing but
+		// emoji, so this line carries no text.
+		//
+		// That matters because chatkit's InsertCustomImageWidget applies a
+		// negative bottom margin of 95% of the image height to the whole
+		// TextView, cancelling the extra height GTK allocates for a line
+		// holding text and a child widget at once. With no text on the line
+		// there is no excess to cancel, so the correction instead shortens
+		// the view by most of the emoji's height and the next message draws
+		// on top of it.
+		//
+		// chatkit skips a view that already carries md-hasimage, the class it
+		// sets itself after the first insert. Setting it up front is how a
+		// view opts out of the correction.
+		text.AddCSSClass("md-hasimage")
 		makeInlineImage(gtkcord.LargeEmojiSize)
 	} else {
 		tag := inlineEmojiTag.FromTable(text.Buffer.TagTable(), "inline-emoji")
