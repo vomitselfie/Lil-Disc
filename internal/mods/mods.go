@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
@@ -14,6 +15,10 @@ type ActionWidget interface {
 	gtk.Widgetter
 	gio.ActionMapper
 }
+
+// ActiveChannel reports the channel open in the window's current tab, or 0
+// when none is. The window installs it; mods cannot import the window.
+var ActiveChannel = func() discord.ChannelID { return 0 }
 
 // Init initializes mods that don't require Discord state.
 // Call after the application and window are ready.

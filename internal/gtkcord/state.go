@@ -25,7 +25,6 @@ import (
 	"github.com/diamondburned/arikawa/v3/state"
 	"github.com/diamondburned/arikawa/v3/utils/httputil/httpdriver"
 	"github.com/diamondburned/arikawa/v3/utils/ws"
-	"github.com/vomitselfie/Lil-Disc/chatkit/components/author"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app/locale"
@@ -33,6 +32,7 @@ import (
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/diamondburned/ningen/v3"
 	"github.com/diamondburned/ningen/v3/discordmd"
+	"github.com/vomitselfie/Lil-Disc/chatkit/components/author"
 	"github.com/vomitselfie/Lil-Disc/internal/colorhash"
 	"github.com/vomitselfie/Lil-Disc/internal/discordident"
 	"github.com/vomitselfie/Lil-Disc/internal/signaling"
@@ -1026,4 +1026,31 @@ func NewGuildIDVariant(id discord.GuildID) *glib.Variant {
 // NewMessageIDVariant creates a new MessageID variant.
 func NewMessageIDVariant(id discord.MessageID) *glib.Variant {
 	return glib.NewVariantInt64(int64(id))
+}
+
+// MessageLocation identifies a message by the channel it lives in, which is
+// what opening it needs: a message ID alone does not say where to look.
+type MessageLocation struct {
+	ChannelID discord.ChannelID
+	MessageID discord.MessageID
+}
+
+// MessageLocationVariantType is the variant type of a MessageLocation, a
+// (channel, message) pair of snowflakes.
+var MessageLocationVariantType = glib.NewVariantType("(xx)")
+
+// Variant encodes the location for an action argument.
+func (l MessageLocation) Variant() *glib.Variant {
+	return glib.NewVariantTuple([]*glib.Variant{
+		glib.NewVariantInt64(int64(l.ChannelID)),
+		glib.NewVariantInt64(int64(l.MessageID)),
+	})
+}
+
+// MessageLocationFromVariant decodes a variant made by Variant.
+func MessageLocationFromVariant(v *glib.Variant) MessageLocation {
+	return MessageLocation{
+		ChannelID: discord.ChannelID(v.ChildValue(0).Int64()),
+		MessageID: discord.MessageID(v.ChildValue(1).Int64()),
+	}
 }

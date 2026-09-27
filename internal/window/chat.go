@@ -476,6 +476,21 @@ func (p *ChatPage) OpenChannel(chID discord.ChannelID) {
 	}
 }
 
+// OpenMessage opens the channel holding the message, loading the history
+// around it if needed, and scrolls to and highlights it. Search results,
+// notifications and message links all come through here.
+func (p *ChatPage) OpenMessage(loc gtkcord.MessageLocation) {
+	p.OpenChannel(loc.ChannelID)
+
+	tab := p.currentTab()
+	if tab.messageView == nil || tab.messageView.ChannelID() != loc.ChannelID {
+		return
+	}
+	if loc.MessageID.IsValid() {
+		tab.messageView.JumpTo(loc.MessageID)
+	}
+}
+
 func updateTabInfo(ctx context.Context, page *adw.TabPage, chID discord.ChannelID) {
 	if chID.IsValid() {
 		page.SetIcon(gio.NewThemedIcon("channel-symbolic"))
@@ -489,6 +504,20 @@ func updateTabInfo(ctx context.Context, page *adw.TabPage, chID discord.ChannelI
 		page.SetIcon(nil)
 		page.SetTitle("New Tab")
 	}
+}
+
+// ActiveChannelID returns the channel open in the selected tab, or 0. Unlike
+// currentTab it never creates a tab.
+func (p *ChatPage) ActiveChannelID() discord.ChannelID {
+	page := p.tabView.SelectedPage()
+	if page == nil {
+		return 0
+	}
+	tab := p.tabs[page.Native()]
+	if tab == nil {
+		return 0
+	}
+	return tab.channelID()
 }
 
 // currentTab returns the current tab. If there is no tab, then it creates one.

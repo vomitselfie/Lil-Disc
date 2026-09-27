@@ -8,7 +8,6 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/vomitselfie/Lil-Disc/chatkit/md/hl"
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
 	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
@@ -21,6 +20,7 @@ import (
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/diamondburned/gotkit/gtkutil/textutil"
 	"github.com/diamondburned/ningen/v3"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/hl"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 	"github.com/vomitselfie/Lil-Disc/internal/mods"
@@ -57,6 +57,14 @@ var _ = lilcss.WriteCSS(`
 	.message-box.message-first-prepended {
 		border-bottom: 1px dashed @lil_border_strong;
 		padding-bottom: {$space_hair};
+	}
+	/* A message opened from search, a link or a notification. The highlight
+	   fades out once the class is removed, so the eye lands on it without
+	   it lingering. */
+	.message-box.message-jump-target {
+		background-color: alpha(@lil_accent, 0.22);
+		border-color: alpha(@lil_accent, 0.6);
+		transition: none;
 	}
 	.message-mentioned {
 		border-left: 2px solid @mentioned;

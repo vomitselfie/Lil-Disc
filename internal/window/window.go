@@ -12,12 +12,12 @@ import (
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/pkg/errors"
-	"libdb.so/ctxt"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 	"github.com/vomitselfie/Lil-Disc/internal/mods"
 	"github.com/vomitselfie/Lil-Disc/internal/window/login"
 	"github.com/vomitselfie/Lil-Disc/internal/window/quickswitcher"
+	"libdb.so/ctxt"
 )
 
 var useDiscordColorScheme = prefs.NewBool(true, prefs.PropMeta{
@@ -94,6 +94,13 @@ func (w *Window) Context() context.Context {
 func (w *Window) initChatPage() {
 	w.Chat = NewChatPage(w.ctx, w)
 	w.Stack.AddChild(w.Chat)
+
+	mods.ActiveChannel = func() discord.ChannelID {
+		if w.Chat == nil {
+			return 0
+		}
+		return w.Chat.ActiveChannelID()
+	}
 }
 
 // It's not happy with how this requires a check for ChatPage, but it makes
@@ -121,6 +128,17 @@ func (w *Window) initActions() {
 					"opening channel from window-scoped action",
 					"channel_id", id)
 				w.useChatPage(func(p *ChatPage) { p.OpenChannel(id) })
+			},
+		},
+		"open-message": {
+			ArgType: gtkcord.MessageLocationVariantType,
+			Func: func(variant *glib.Variant) {
+				loc := gtkcord.MessageLocationFromVariant(variant)
+				slog.Debug(
+					"opening message from window-scoped action",
+					"channel_id", loc.ChannelID,
+					"message_id", loc.MessageID)
+				w.useChatPage(func(p *ChatPage) { p.OpenMessage(loc) })
 			},
 		},
 		"open-guild": {

@@ -76,8 +76,8 @@ func handleMessageNotification(ctx context.Context, state *gtkcord.State, ev *ga
 		Body: state.MessagePreview(&ev.Message),
 		Icon: notify.IconURL(ctx, avatarURL, notify.IconName("avatar-default-symbolic")),
 		Action: notify.Action{
-			ActionID: "app.open-channel",
-			Argument: gtkcord.NewChannelIDVariant(ev.ChannelID),
+			ActionID: "app.open-message",
+			Argument: gtkcord.MessageLocation{ChannelID: ev.ChannelID, MessageID: ev.ID}.Variant(),
 		},
 	})
 }

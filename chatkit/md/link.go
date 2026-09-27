@@ -1,6 +1,7 @@
 package md
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"strings"
@@ -8,6 +9,12 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/gtkutil/textutil"
 )
+
+// InterceptLink, when set, is offered every link clicked in rendered
+// markdown before it is opened in the browser. Returning true means the
+// application handled it, for example by opening a Discord message link
+// inside the client.
+var InterceptLink func(ctx context.Context, url string) bool
 
 // BindLinkHandler binds input handlers for triggering hyperlinks within the
 // TextView. If BindLinkHandler is called on the same TextView again, then it

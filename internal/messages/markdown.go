@@ -5,20 +5,49 @@ import (
 	"log/slog"
 
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/vomitselfie/Lil-Disc/chatkit/md"
-	"github.com/vomitselfie/Lil-Disc/chatkit/md/block"
-	"github.com/vomitselfie/Lil-Disc/chatkit/md/mdrender"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
+	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/components/onlineimage"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/diamondburned/gotkit/gtkutil/textutil"
 	"github.com/diamondburned/ningen/v3/discordmd"
-	"github.com/yuin/goldmark/ast"
-	"libdb.so/ctxt"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/block"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/mdrender"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
+	"github.com/yuin/goldmark/ast"
+	"libdb.so/ctxt"
 )
+
+func init() {
+	// Discord message and channel links open inside LilDisc rather than in
+	// the browser, as long as the channel is one this account can see.
+	// Anything else, including links to channels we have no record of,
+	// still opens in the browser.
+	md.InterceptLink = func(ctx context.Context, url string) bool {
+		loc, ok := gtkcord.ParseDiscordLink(url)
+		if !ok {
+			return false
+		}
+		state := gtkcord.FromContext(ctx)
+		if state == nil {
+			return false
+		}
+		if _, err := state.Cabinet.Channel(loc.ChannelID); err != nil {
+			return false
+		}
+
+		a := app.FromContext(ctx)
+		if loc.MessageID.IsValid() {
+			a.ActivateAction("open-message", loc.Variant())
+		} else {
+			a.ActivateAction("open-channel", gtkcord.NewChannelIDVariant(loc.ChannelID))
+		}
+		return true
+	}
+}
 
 type markdownState struct {
 	bindedSpoilerBlocks map[*block.TextBlock]struct{}

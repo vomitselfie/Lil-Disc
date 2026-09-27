@@ -194,6 +194,7 @@ func main() {
 	m.app.AddActionCallbacks(map[string]gtkutil.ActionCallback{
 		"app.open-channel": m.forwardSignalToWindow("open-channel", gtkcord.SnowflakeVariant),
 		"app.open-guild":   m.forwardSignalToWindow("open-guild", gtkcord.SnowflakeVariant),
+		"app.open-message": m.forwardSignalToWindow("open-message", gtkcord.MessageLocationVariantType),
 	})
 	m.app.AddActionShortcuts(map[string]string{
 		"<Ctrl>Q": "app.quit",

@@ -4,11 +4,11 @@ import (
 	"log"
 	"strings"
 
-	"github.com/vomitselfie/Lil-Disc/chatkit/md"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/textutil"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md"
 )
 
 var textBlockCSS = cssutil.Applier("md-textblock", `
@@ -77,7 +77,13 @@ func (b *TextBlock) TextBlock() *TextBlock { return b }
 // this method if the TextBlock has a link. Only the first call will bind the
 // handler.
 func (b *TextBlock) ConnectLinkHandler() {
-	md.BindLinkHandler(b.TextView, func(url string) { app.OpenURI(b.state.Context(), url) })
+	md.BindLinkHandler(b.TextView, func(url string) {
+		ctx := b.state.Context()
+		if md.InterceptLink != nil && md.InterceptLink(ctx, url) {
+			return
+		}
+		app.OpenURI(ctx, url)
+	})
 }
 
 // TrailingNewLines counts the number of trailing new lines up to 2.

@@ -14,7 +14,6 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/utils/sendpart"
-	"github.com/vomitselfie/Lil-Disc/chatkit/components/author"
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -24,6 +23,7 @@ import (
 	"github.com/diamondburned/gotkit/components/autoscroll"
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/pkg/errors"
+	"github.com/vomitselfie/Lil-Disc/chatkit/components/author"
 	"github.com/vomitselfie/Lil-Disc/internal/components/hoverpopover"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
@@ -89,6 +89,17 @@ type View struct {
 
 	state viewState
 
+	// loadGen numbers each load of the message list (the initial backlog or
+	// a jump). An async load only applies its result if no later load has
+	// started, so opening a channel and jumping into it cannot clobber each
+	// other.
+	loadGen uint64
+	// detached is set while the list shows a window of older history that
+	// does not reach the present. Live messages are not appended then,
+	// because they would sit after a silent gap.
+	detached   bool
+	presentBar *gtk.Revealer
+
 	ctx  context.Context
 	chID discord.ChannelID
 }
@@ -110,6 +121,17 @@ var viewCSS = lilcss.Applier("message-view", `
 		margin: {$space_xs} {$space_lg};
 		font-size: {$font_small};
 		color: @lil_text_dim;
+	}
+	.message-present-button {
+		margin: {$space_xs} {$space_lg};
+		border-radius: {$radius_pill};
+		background: @lil_selected;
+		color: @lil_accent_text;
+		font-size: {$font_small};
+		font-weight: 600;
+	}
+	.message-present-button:hover {
+		background: alpha(@lil_accent, 0.3);
 	}
 	.message-show-more:hover {
 		background: @lil_hover;
@@ -260,7 +282,16 @@ func NewView(ctx context.Context, chID discord.ChannelID) *View {
 	outerBox := gtk.NewBox(gtk.OrientationVertical, 0)
 	outerBox.SetHExpand(true)
 	outerBox.SetVExpand(true)
+	jumpPresent := gtk.NewButtonWithLabel(locale.Get("Viewing older messages · Jump to present"))
+	jumpPresent.AddCSSClass("message-present-button")
+	jumpPresent.ConnectClicked(v.JumpToPresent)
+
+	v.presentBar = gtk.NewRevealer()
+	v.presentBar.SetTransitionType(gtk.RevealerTransitionTypeSlideUp)
+	v.presentBar.SetChild(jumpPresent)
+
 	outerBox.Append(v.Scroll)
+	outerBox.Append(v.presentBar)
 	outerBox.Append(composerClamp)
 
 	// Narrow layout. A 42px avatar with 8px either side costs 58px of every
@@ -347,6 +378,11 @@ func NewView(ctx context.Context, chID discord.ChannelID) *View {
 					msg.message.Update(ev)
 					return
 				}
+			}
+
+			if v.detached {
+				// Showing older history; the jump bar brings the present back.
+				return
 			}
 
 			if !v.ignoreMessage(&ev.Message) {
@@ -455,21 +491,9 @@ func NewView(ctx context.Context, chID discord.ChannelID) *View {
 		"messages.scroll-to": {
 			ArgType: gtkcord.SnowflakeVariant,
 			Func: func(args *glib.Variant) {
-				id := discord.MessageID(args.Int64())
-
-				msg, ok := v.rows[messageKeyID(id)]
-				if !ok {
-					slog.Warn(
-						"tried to scroll to non-existent message",
-						"id", id)
-					return
-				}
-
-				if !msg.ListBoxRow.GrabFocus() {
-					slog.Warn(
-						"failed to grab focus of message",
-						"id", id)
-				}
+				// Loads the history around the message when it is not in
+				// the list, so a reply to an old message still lands on it.
+				v.JumpTo(discord.MessageID(args.Int64()))
 			},
 		},
 	})
@@ -600,18 +624,28 @@ func (v *View) FetchBacklog() {
 		"loading message view",
 		"channel", v.chID)
 
+	gen := v.beginLoad()
 	v.LoadablePage.SetLoading()
 	v.unload()
+	v.setDetached(false)
 
 	state := gtkcord.FromContext(v.ctx)
 
 	gtkutil.Async(v.ctx, func() func() {
 		msgs, err := state.Online().Messages(v.chID, 15)
 		if err != nil {
-			return func() { v.LoadablePage.SetError(err) }
+			return func() {
+				if v.isCurrentLoad(gen) {
+					v.LoadablePage.SetError(err)
+				}
+			}
 		}
 
 		return func() {
+			if !v.isCurrentLoad(gen) {
+				return
+			}
+
 			state := gtkcord.FromContext(v.ctx)
 
 			ch, _ := state.Cabinet.Channel(v.chID)
@@ -1079,6 +1113,13 @@ func (v *View) updateMessageReactions(id discord.MessageID) {
 func (v *View) SendMessage(sendingMsg composer.SendingMessage) {
 	state := gtkcord.FromContext(v.ctx)
 
+	if v.detached {
+		// A sent message belongs at the end of the channel, not after an
+		// old window. Reloading the present unloads synchronously, so the
+		// pending row added below survives and the gateway echo finds it.
+		v.JumpToPresent()
+	}
+
 	me, _ := state.Cabinet.Me()
 	if me == nil {
 		// The session is gone or not ready (a logout or reconnect racing the
@@ -1191,6 +1232,105 @@ func (v *View) SendMessage(sendingMsg composer.SendingMessage) {
 			// using the nonce.
 			uploading.SetVisible(uploading.HasErrored())
 		}
+	})
+}
+
+// beginLoad starts a new load of the message list and returns its number.
+func (v *View) beginLoad() uint64 {
+	v.loadGen++
+	return v.loadGen
+}
+
+// isCurrentLoad reports whether no load has started since gen.
+func (v *View) isCurrentLoad(gen uint64) bool {
+	return gen == v.loadGen
+}
+
+func (v *View) setDetached(detached bool) {
+	v.detached = detached
+	v.presentBar.SetRevealChild(detached)
+}
+
+// JumpToPresent reloads the latest messages, leaving older history.
+func (v *View) JumpToPresent() {
+	v.FetchBacklog()
+}
+
+// jumpAroundLimit is how many messages are loaded around a jump target.
+const jumpAroundLimit = 50
+
+// JumpTo shows the message with the given ID, loading the history around it
+// if it is not already in the list, then focuses and briefly highlights it.
+func (v *View) JumpTo(id discord.MessageID) {
+	if row, ok := v.rows[messageKeyID(id)]; ok {
+		v.focusJumpTarget(row)
+		return
+	}
+
+	gen := v.beginLoad()
+	v.LoadablePage.SetLoading()
+
+	state := gtkcord.FromContext(v.ctx).Online()
+	chID := v.chID
+
+	gtkutil.Async(v.ctx, func() func() {
+		msgs, err := state.MessagesAround(chID, id, jumpAroundLimit)
+		if err != nil {
+			return func() {
+				if v.isCurrentLoad(gen) {
+					v.LoadablePage.SetError(fmt.Errorf("cannot load message: %w", err))
+				}
+			}
+		}
+
+		ch, _ := state.Cabinet.Channel(chID)
+
+		return func() {
+			if !v.isCurrentLoad(gen) {
+				return
+			}
+
+			slices.SortFunc(msgs, func(a, b discord.Message) int {
+				return cmp.Compare(a.ID, b.ID)
+			})
+
+			v.unload()
+			v.setPageToMain()
+
+			// The window reaches the present only if it holds the channel's
+			// newest message; otherwise live messages would land after a gap.
+			reachesPresent := len(msgs) == 0 ||
+				(ch != nil && msgs[len(msgs)-1].ID >= ch.LastMessageID)
+			v.setDetached(!reachesPresent)
+
+			summaries := v.messageSummaries()
+			for _, msg := range msgs {
+				w := v.upsertMessage(msg.ID, newMessageInfo(&msg), 0)
+				w.Update(&gateway.MessageCreateEvent{Message: msg})
+				if summary, ok := summaries[msg.ID]; ok {
+					v.appendSummary(summary)
+				}
+			}
+
+			row, ok := v.rows[messageKeyID(id)]
+			if !ok {
+				app.Error(v.ctx, errors.New("that message no longer exists"))
+				return
+			}
+			// Focus once the rows have been allocated, or the scroll has
+			// nowhere to go.
+			glib.IdleAdd(func() { v.focusJumpTarget(row) })
+		}
+	})
+}
+
+// focusJumpTarget scrolls to the row and highlights it for a moment, so the
+// eye lands on the right message.
+func (v *View) focusJumpTarget(row messageRow) {
+	row.ListBoxRow.GrabFocus()
+	row.message.AddCSSClass("message-jump-target")
+	glib.TimeoutSecondsAdd(2, func() {
+		row.message.RemoveCSSClass("message-jump-target")
 	})
 }
 
