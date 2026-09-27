@@ -308,7 +308,7 @@ func (t *trayItem) ContextMenu(x, y int32) *dbus.Error {
 					gtkWin.Present()
 				}
 			case respQuit:
-				os.Exit(0)
+				quitFromTray(gtkWin)
 			}
 		})
 
@@ -448,11 +448,20 @@ func (m *trayMenu) Event(id int32, eventID string, data dbus.Variant, timestamp 
 	case menuIDShow:
 		m.item.Activate(0, 0)
 	case menuIDQuit:
-		glib.IdleAdd(func() {
-			os.Exit(0)
-		})
+		glib.IdleAdd(func() { quitFromTray(m.item.win) })
 	}
 	return nil
+}
+
+// quitFromTray quits through the application's quit action rather than
+// os.Exit, which skipped saving tabs and reading positions, closing the
+// Discord session, and any state writes not yet flushed to disk, drafts
+// among them.
+func quitFromTray(win gtk.Widgetter) {
+	if !gtk.BaseWidget(win).ActivateAction("app.quit", nil) {
+		slog.Warn("tray: app.quit action not found, exiting directly")
+		os.Exit(0)
+	}
 }
 
 // EventGroup implements com.canonical.dbusmenu.

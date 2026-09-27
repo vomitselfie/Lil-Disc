@@ -35,6 +35,7 @@ import (
 	"github.com/vomitselfie/Lil-Disc/chatkit/components/author"
 	"github.com/vomitselfie/Lil-Disc/internal/colorhash"
 	"github.com/vomitselfie/Lil-Disc/internal/discordident"
+	"github.com/vomitselfie/Lil-Disc/internal/lilpath"
 	"github.com/vomitselfie/Lil-Disc/internal/signaling"
 
 	coreglib "github.com/diamondburned/gotk4/pkg/core/glib"
@@ -306,11 +307,9 @@ func (s *State) EachFriend(fn func(FriendRecord) (stop bool)) {
 
 // friendCacheFile returns the path of the on-disk friend cache.
 func friendCacheFile() string {
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(dir, "lildisc", "api_cache", "friend_cache.json")
+	// Alongside the API cache, which lilpath.Setup moved out of the config
+	// directory.
+	return lilpath.CacheDir("api", "friend_cache.json")
 }
 
 // FetchFriendNicknames populates the friend cache from the on-disk cache
@@ -391,9 +390,8 @@ func (s *State) FetchFriendNicknames() {
 	friendCacheInstance.set(cached)
 
 	if path := friendCacheFile(); path != "" {
-		os.MkdirAll(filepath.Dir(path), 0o755)
 		if data, err := json.Marshal(cached); err == nil {
-			os.WriteFile(path, data, 0o644)
+			lilpath.WriteFile(path, data)
 		}
 	}
 

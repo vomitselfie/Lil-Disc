@@ -661,6 +661,7 @@ func (v *View) FetchBacklog() {
 			}
 
 			v.AddBacklog(msgs)
+			v.restoreScrollAnchor(gen)
 		}
 	})
 }
@@ -1235,6 +1236,52 @@ func (v *View) SendMessage(sendingMsg composer.SendingMessage) {
 	})
 }
 
+// channelAnchorKey remembers, per channel, the message at the top of the
+// view when the user left while scrolled up, so reopening the channel
+// returns to where they were reading. Leaving at the bottom clears it, so
+// the usual case still opens at the latest messages.
+var channelAnchorKey = app.NewStateKey[discord.MessageID]("channel-anchor")
+
+// SaveScrollAnchor records where the user is reading, or forgets it if they
+// are at the latest messages. Call it when the view is about to go away.
+func (v *View) SaveScrollAnchor() {
+	anchors := channelAnchorKey.Acquire(v.ctx)
+	key := v.chID.String()
+
+	if v.Scroll.IsBottomed() && !v.detached {
+		anchors.Delete(key)
+		return
+	}
+
+	row := v.List.RowAtY(int(v.Scroll.VAdjustment().Value()))
+	if row == nil {
+		return
+	}
+	for k, r := range v.rows {
+		if r.ListBoxRow.Index() == row.Index() && k.IsEvent() {
+			anchors.Set(key, k.ID())
+			return
+		}
+	}
+}
+
+// restoreScrollAnchor scrolls back to the saved reading position, if any,
+// once the initial backlog is in.
+func (v *View) restoreScrollAnchor(gen uint64) {
+	anchors := channelAnchorKey.Acquire(v.ctx)
+	key := v.chID.String()
+	anchors.Exists(key, func(exists bool) {
+		if !exists {
+			return
+		}
+		anchors.Get(key, func(id discord.MessageID) {
+			if v.isCurrentLoad(gen) && id.IsValid() {
+				v.jumpTo(id, false)
+			}
+		})
+	})
+}
+
 // beginLoad starts a new load of the message list and returns its number.
 func (v *View) beginLoad() uint64 {
 	v.loadGen++
@@ -1262,8 +1309,14 @@ const jumpAroundLimit = 50
 // JumpTo shows the message with the given ID, loading the history around it
 // if it is not already in the list, then focuses and briefly highlights it.
 func (v *View) JumpTo(id discord.MessageID) {
+	v.jumpTo(id, true)
+}
+
+// jumpTo is JumpTo with the highlight optional: a restored reading position
+// should not flash.
+func (v *View) jumpTo(id discord.MessageID, highlight bool) {
 	if row, ok := v.rows[messageKeyID(id)]; ok {
-		v.focusJumpTarget(row)
+		v.focusRow(row, highlight)
 		return
 	}
 
@@ -1319,15 +1372,18 @@ func (v *View) JumpTo(id discord.MessageID) {
 			}
 			// Focus once the rows have been allocated, or the scroll has
 			// nowhere to go.
-			glib.IdleAdd(func() { v.focusJumpTarget(row) })
+			glib.IdleAdd(func() { v.focusRow(row, highlight) })
 		}
 	})
 }
 
-// focusJumpTarget scrolls to the row and highlights it for a moment, so the
-// eye lands on the right message.
-func (v *View) focusJumpTarget(row messageRow) {
+// focusRow scrolls to the row and, when asked, highlights it for a moment,
+// so the eye lands on the right message.
+func (v *View) focusRow(row messageRow, highlight bool) {
 	row.ListBoxRow.GrabFocus()
+	if !highlight {
+		return
+	}
 	row.message.AddCSSClass("message-jump-target")
 	glib.TimeoutSecondsAdd(2, func() {
 		row.message.RemoveCSSClass("message-jump-target")

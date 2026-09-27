@@ -7,17 +7,32 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/vomitselfie/Lil-Disc/internal/lilpath"
 )
 
-// apiCacheDir returns the directory for cached API responses.
+// apiCacheDir returns the directory for cached API responses. It is a
+// cache, so it lives under ~/.cache; lilpath.Setup moves the old
+// ~/.config/lildisc/api_cache there.
 func apiCacheDir() string {
-	dir, err := os.UserConfigDir()
-	if err != nil {
+	d := lilpath.CacheDir("api")
+	if d == "" || lilpath.MkdirAll(d) != nil {
 		return ""
 	}
-	d := filepath.Join(dir, "lildisc", "api_cache")
-	os.MkdirAll(d, 0o755)
 	return d
+}
+
+// apiCacheVersion is the envelope format. Bump it when a cached payload's
+// shape changes, and older files are ignored rather than misread.
+const apiCacheVersion = 1
+
+// apiCacheEnvelope wraps every cached payload. The creation time is
+// recorded inside the file rather than read from its mtime, which a copy or
+// restore can change.
+type apiCacheEnvelope struct {
+	Version int             `json:"version"`
+	Created time.Time       `json:"created"`
+	Data    json.RawMessage `json:"data"`
 }
 
 // safeCacheFilename rejects anything that could escape apiCacheDir. Callers
@@ -49,23 +64,25 @@ func loadCachedJSON(filename string, maxAge time.Duration, dest interface{}) boo
 	}
 
 	path := filepath.Join(dir, filename)
-	info, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-
-	// Check expiry.
-	if maxAge > 0 && time.Since(info.ModTime()) > maxAge {
-		return false
-	}
-
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return false
 	}
 
-	if err := json.Unmarshal(data, dest); err != nil {
-		slog.Debug("apicache: corrupt cache file, removing", "file", filename, "err", err)
+	var env apiCacheEnvelope
+	if err := json.Unmarshal(data, &env); err != nil || env.Version != apiCacheVersion {
+		// Corrupt, or written by an older version without the envelope.
+		slog.Debug("apicache: unreadable cache file, removing", "file", filename, "err", err)
+		os.Remove(path)
+		return false
+	}
+
+	if maxAge > 0 && time.Since(env.Created) > maxAge {
+		return false
+	}
+
+	if err := json.Unmarshal(env.Data, dest); err != nil {
+		slog.Debug("apicache: corrupt cache payload, removing", "file", filename, "err", err)
 		os.Remove(path)
 		return false
 	}
@@ -83,13 +100,22 @@ func saveCachedJSON(filename string, data interface{}) {
 		return
 	}
 
-	b, err := json.Marshal(data)
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+	b, err := json.Marshal(apiCacheEnvelope{
+		Version: apiCacheVersion,
+		Created: time.Now(),
+		Data:    payload,
+	})
 	if err != nil {
 		return
 	}
 
-	path := filepath.Join(dir, filename)
-	os.WriteFile(path, b, 0o644)
+	if err := lilpath.WriteFile(filepath.Join(dir, filename), b); err != nil {
+		slog.Debug("apicache: cannot write cache file", "file", filename, "err", err)
+	}
 }
 
 // ClearAPICache removes all cached API responses, forcing fresh fetches.

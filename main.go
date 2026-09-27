@@ -20,6 +20,7 @@ import (
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/lilpath"
 	"github.com/vomitselfie/Lil-Disc/internal/mods"
 	"github.com/vomitselfie/Lil-Disc/internal/window"
 	"github.com/vomitselfie/Lil-Disc/internal/window/about"
@@ -177,6 +178,9 @@ func main() {
 	loadEnvFile()
 	applyGraphicsPrefs()
 
+	// Before anything reads LilDisc's own files, so moved files are found.
+	lilpath.Setup()
+
 	// After loadEnvFile, because the client version and build numbers it
 	// installs can be overridden from that file, and before any Discord
 	// state is constructed, because arikawa reads them as it builds the
@@ -189,7 +193,12 @@ func main() {
 		"app.preferences": func() { prefui.ShowDialog(m.win.Context()) },
 		"app.about":       func() { about.New(m.win.Context()).Present(m.win) },
 		"app.logs":        func() { logui.ShowDefaultViewer(m.win.Context()) },
-		"app.quit":        func() { m.app.Quit() },
+		"app.quit": func() {
+			if m.win != nil {
+				m.win.SaveViewState()
+			}
+			m.app.Quit()
+		},
 	})
 	m.app.AddActionCallbacks(map[string]gtkutil.ActionCallback{
 		"app.open-channel": m.forwardSignalToWindow("open-channel", gtkcord.SnowflakeVariant),

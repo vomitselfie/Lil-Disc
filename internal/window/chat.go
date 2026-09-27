@@ -31,6 +31,23 @@ import (
 var lastGuildKey = app.NewSingleStateKey[discord.GuildID]("last-guild-state")
 var lastChannelKey = app.NewStateKey[discord.ChannelID]("guild-last-open")
 
+// openTabsKey remembers the open tabs and which was active, so a restart
+// comes back to the same set of channels rather than a single one.
+var openTabsKey = app.NewSingleStateKey[savedTabs]("open-tabs")
+
+// recentChannelsKey persists the quick switcher's recency list.
+var recentChannelsKey = app.NewSingleStateKey[[]discord.ChannelID]("recent-channels")
+
+type savedTabs struct {
+	Channels []discord.ChannelID `json:"channels"`
+	Active   int                 `json:"active"`
+}
+
+// maxRestoredTabs bounds how many tabs a restart reopens. Each tab loads
+// its channel's messages, so an old session with dozens of tabs would
+// otherwise start with a burst of requests.
+const maxRestoredTabs = 8
+
 // mod: resizable sidebar — remember the dragged width across launches, per
 // list kind. The DM list and a guild's channel list want different widths, so
 // they get their own entries rather than fighting over one.
@@ -77,6 +94,11 @@ type ChatPage struct {
 
 	lastGuildState   *app.TypedSingleState[discord.GuildID]
 	lastChannelState *app.TypedState[discord.ChannelID]
+	openTabsState    *app.TypedSingleState[savedTabs]
+	recentState      *app.TypedSingleState[[]discord.ChannelID]
+	// restoringTabs suppresses saving while tabs are being reopened, so a
+	// half-restored set does not overwrite the saved one.
+	restoringTabs bool
 
 	lastGuild discord.GuildID
 
@@ -117,6 +139,8 @@ func NewChatPage(ctx context.Context, w *Window) *ChatPage {
 		tabs:             make(map[uintptr]*chatTab),
 		lastGuildState:   lastGuildKey.Acquire(ctx),
 		lastChannelState: lastChannelKey.Acquire(ctx),
+		openTabsState:    openTabsKey.Acquire(ctx),
+		recentState:      recentChannelsKey.Acquire(ctx),
 	}
 
 	p.tabView = adw.NewTabView()
@@ -124,12 +148,17 @@ func NewChatPage(ctx context.Context, w *Window) *ChatPage {
 	p.tabView.SetDefaultIcon(gio.NewThemedIcon("channel-symbolic"))
 	p.tabView.NotifyProperty("selected-page", func() {
 		p.onActiveTabChange(p.tabView.SelectedPage())
+		p.saveTabs()
 	})
 	p.tabView.ConnectClosePage(func(page *adw.TabPage) bool {
-		_, ok := p.tabs[page.Native()]
+		tab, ok := p.tabs[page.Native()]
 		if ok {
+			if tab.messageView != nil {
+				tab.messageView.SaveScrollAnchor()
+			}
 			delete(p.tabs, page.Native())
 			p.tabView.ClosePageFinish(page, true)
+			p.saveTabs()
 		}
 		return gdk.EVENT_STOP
 	})
@@ -396,7 +425,23 @@ func (p *ChatPage) SwitchToMessages() {
 	tab := p.currentTab()
 	tab.switchToPlaceholder()
 
-	// Restore the last opened channel if there is one.
+	p.recentState.Get(gtkcord.SetRecentChannels)
+
+	// Reopen the saved tabs; fall back to the last guild's last channel.
+	p.openTabsState.Exists(func(exists bool) {
+		if !exists {
+			p.restoreLastGuild()
+			return
+		}
+		p.openTabsState.Get(func(saved savedTabs) {
+			if !p.restoreTabs(saved) {
+				p.restoreLastGuild()
+			}
+		})
+	})
+}
+
+func (p *ChatPage) restoreLastGuild() {
 	p.lastGuildState.Get(func(id discord.GuildID) {
 		if id.IsValid() {
 			p.OpenGuild(id)
@@ -404,6 +449,77 @@ func (p *ChatPage) SwitchToMessages() {
 			p.OpenDMs()
 		}
 	})
+}
+
+// restoreTabs reopens saved tabs whose channels this account can still see.
+// It reports whether it opened any.
+func (p *ChatPage) restoreTabs(saved savedTabs) bool {
+	state := gtkcord.FromContext(p.ctx).Offline()
+
+	var channels []discord.ChannelID
+	active := 0
+	for i, id := range saved.Channels {
+		if _, err := state.Channel(id); err != nil {
+			continue
+		}
+		if i == saved.Active {
+			active = len(channels)
+		}
+		channels = append(channels, id)
+		if len(channels) == maxRestoredTabs {
+			break
+		}
+	}
+	if len(channels) == 0 {
+		return false
+	}
+
+	p.restoringTabs = true
+	for i, id := range channels {
+		if i > 0 {
+			p.newTab()
+		}
+		p.OpenChannel(id)
+	}
+	if page := p.tabView.NthPage(active); page != nil {
+		p.tabView.SetSelectedPage(page)
+	}
+	p.restoringTabs = false
+	p.saveTabs()
+	return true
+}
+
+// saveTabs records the open tabs and the active one.
+func (p *ChatPage) saveTabs() {
+	if p.restoringTabs {
+		return
+	}
+
+	var saved savedTabs
+	selected := p.tabView.SelectedPage()
+	for i := 0; i < p.tabView.NPages(); i++ {
+		page := p.tabView.NthPage(i)
+		tab := p.tabs[page.Native()]
+		if tab == nil || !tab.channelID().IsValid() {
+			continue
+		}
+		if selected != nil && page.Native() == selected.Native() {
+			saved.Active = len(saved.Channels)
+		}
+		saved.Channels = append(saved.Channels, tab.channelID())
+	}
+	p.openTabsState.Set(saved)
+}
+
+// SaveViewState records each open channel's reading position. Call it
+// before the window closes or the app quits.
+func (p *ChatPage) SaveViewState() {
+	for _, tab := range p.tabs {
+		if tab.messageView != nil {
+			tab.messageView.SaveScrollAnchor()
+		}
+	}
+	p.saveTabs()
 }
 
 // OpenDMs opens the DMs page.
@@ -458,6 +574,7 @@ func (p *ChatPage) OpenChannel(chID discord.ChannelID) {
 	// Open the channel in the message view.
 	tab.switchToChannel(chID)
 	gtkcord.NoteChannelOpened(chID)
+	p.recentState.Set(gtkcord.RecentChannels())
 
 	page := p.tabView.Page(tab)
 	updateTabInfo(p.ctx, page, chID)
@@ -475,6 +592,8 @@ func (p *ChatPage) OpenChannel(chID discord.ChannelID) {
 		// Save the last opened channel for the guild.
 		p.lastChannelState.Set(ch.GuildID.String(), chID)
 	}
+
+	p.saveTabs()
 }
 
 // OpenMessage opens the channel holding the message, loading the history
@@ -681,6 +800,9 @@ func (t *chatTab) switchToChannel(id discord.ChannelID) bool {
 	}
 
 	old := t.messageView
+	if old != nil {
+		old.SaveScrollAnchor()
+	}
 
 	if id.IsValid() {
 		t.messageView = messages.NewView(t.ctx, id)

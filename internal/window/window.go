@@ -95,6 +95,14 @@ func (w *Window) initChatPage() {
 	w.Chat = NewChatPage(w.ctx, w)
 	w.Stack.AddChild(w.Chat)
 
+	// Record reading positions and tabs before the window goes. With the
+	// tray enabled the window only hides, but this still runs first, and a
+	// later quit from the tray skips close-request entirely.
+	w.ConnectCloseRequest(func() bool {
+		w.SaveViewState()
+		return false
+	})
+
 	mods.ActiveChannel = func() discord.ChannelID {
 		if w.Chat == nil {
 			return 0
@@ -178,6 +186,12 @@ func (w *Window) showQuickSwitcher() {
 	w.useChatPage(func(*ChatPage) {
 		quickswitcher.ShowDialog(w.ctx)
 	})
+}
+
+// SaveViewState records open tabs and reading positions, for restoring on
+// the next start.
+func (w *Window) SaveViewState() {
+	w.useChatPage((*ChatPage).SaveViewState)
 }
 
 func (w *Window) useChatPage(f func(*ChatPage)) {

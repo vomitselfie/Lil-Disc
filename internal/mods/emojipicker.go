@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -19,6 +18,7 @@ import (
 	"github.com/vomitselfie/Lil-Disc/internal/components/pickergrid"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/lilpath"
 )
 
 var enableEmojiPicker = prefs.NewBool(true, prefs.PropMeta{
@@ -74,11 +74,8 @@ func recentsFile() string {
 	if recentsPath != "" {
 		return recentsPath
 	}
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return ""
-	}
-	recentsPath = filepath.Join(dir, "lildisc", "emoji_recents.json")
+	// State, not configuration; lilpath.Setup moves the old file here.
+	recentsPath = lilpath.StateDir("emoji_recents.json")
 	return recentsPath
 }
 
@@ -135,9 +132,8 @@ func addRecent(entry recentEntry) {
 	if path == "" {
 		return
 	}
-	os.MkdirAll(filepath.Dir(path), 0o755)
 	data, _ := json.Marshal(recentsCache)
-	os.WriteFile(path, data, 0o644)
+	lilpath.WriteFile(path, data)
 }
 
 // --- Common Unicode emoji list (popular subset) ---
