@@ -255,7 +255,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Install GTK
-        run: brew install gtk4 libadwaita pkg-config
+        run: brew install gtk4 libadwaita gobject-introspection pkg-config
 
       - name: Build
         id: build
