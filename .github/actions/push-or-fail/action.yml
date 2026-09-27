@@ -11,7 +11,9 @@ inputs:
 runs:
   using: composite
   steps:
-    - if: github.event_name == 'push'
+    # A tag build has no branch to push to, and the release is built from
+    # the tagged tree regardless, so tag pushes neither commit nor fail.
+    - if: github.event_name == 'push' && github.ref_type == 'branch'
       name: Commit changes
       uses: stefanzweifel/git-auto-commit-action@v5
       with:

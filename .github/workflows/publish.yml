@@ -4,9 +4,11 @@ on:
   push:
     branches-ignore:
       - nightly
+    # Pushing a version tag is the whole release: the jobs below build every
+    # platform and tag-release publishes them. Nothing needs doing by hand.
+    tags:
+      - 'v*'
   pull_request:
-  release:
-    types: [released] # Prevents double builds on nightly
 
 permissions:
   contents: write
@@ -293,30 +295,88 @@ jobs:
           path: result
 
 
-  upload-release:
-    name: Upload artifacts to release
+  tag-release:
+    name: Publish release for tag
     needs: [build-source, build-linux, build-windows, build-macos]
-    environment: Stable release
     runs-on: ubuntu-latest
-    if: github.event_name == 'release'
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
     concurrency:
-      group: release-${{ github.workflow }}-${{ github.ref }}
+      group: tag-release-${{ github.ref }}
+      cancel-in-progress: false
+    defaults:
+      run:
+        # Plain bash: this job only moves files around and needs no devShell.
+        shell: bash -e {0}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
-
-      - uses: DeterminateSystems/nix-installer-action@main
+          fetch-depth: 0
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: /tmp/artifacts
 
-      - name: Upload artifacts to GitHub Releases
-        uses: diamondburned/action-upload-release@main
+      - name: Collect built artifacts
+        run: mkdir /tmp/bin && find /tmp/artifacts -type f -exec mv {} /tmp/bin/ \;
+
+      - name: Read the tag
+        id: tag
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          # Checkout can leave a lightweight copy of an annotated tag; fetch
+          # the real one so its message is readable.
+          git fetch --force origin "refs/tags/$tag:refs/tags/$tag"
+
+          # An annotated tag's subject becomes the release title and its body
+          # the notes. A lightweight tag gets the tag name and generated notes.
+          title=$(git tag -l --format='%(contents:subject)' "$tag")
+          git tag -l --format='%(contents:body)' "$tag" > /tmp/notes.md
+          [ -n "$title" ] || title="LilDisc $tag"
+
+          prerelease=false
+          [[ "$tag" == *-* ]] && prerelease=true
+
+          {
+            echo "title=$title"
+            echo "prerelease=$prerelease"
+            echo "version=${tag#v}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
         with:
-          files: artifacts
+          tag_name: ${{ github.ref_name }}
+          name: ${{ steps.tag.outputs.title }}
+          body_path: /tmp/notes.md
+          generate_release_notes: true
+          prerelease: ${{ steps.tag.outputs.prerelease == 'true' }}
+          make_latest: ${{ steps.tag.outputs.prerelease != 'true' }}
+          files: /tmp/bin/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Record the release in the AppStream metainfo on the default branch.
+      # This used to be a separate workflow triggered by publishing a
+      # release, which never fires for releases created by this token.
+      - name: Update metainfo on the default branch
+        if: steps.tag.outputs.prerelease != 'true'
+        run: |
+          git checkout "${{ github.event.repository.default_branch }}"
+          git pull --ff-only
+          python3 .github/tools/update-metainfo.py \
+            "${{ steps.tag.outputs.version }}" \
+            "$(date -u +%Y-%m-%d)" \
+            "${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Record ${{ github.ref_name }} in metainfo"
+          git push
 
 
   auto-release:
@@ -365,7 +425,10 @@ jobs:
           body: |
             Automatic release built from `master` (${{ github.sha }}).
           generate_release_notes: true
-          make_latest: true
+          # Builds of every master push are pre-releases, so a pushed version
+          # tag (tag-release above) is always the one marked latest.
+          prerelease: true
+          make_latest: false
           files: /tmp/bin/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
