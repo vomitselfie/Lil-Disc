@@ -10,8 +10,6 @@ import (
 	"strings"
 
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/vomitselfie/Lil-Disc/chatkit/components/embed"
-	"github.com/vomitselfie/Lil-Disc/chatkit/md/mdrender"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -23,6 +21,8 @@ import (
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/diamondburned/ningen/v3/discordmd"
 	"github.com/dustin/go-humanize"
+	"github.com/vomitselfie/Lil-Disc/chatkit/components/embed"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/mdrender"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 	"github.com/vomitselfie/Lil-Disc/internal/mods"

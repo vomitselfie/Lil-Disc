@@ -10,12 +10,12 @@ import (
 	"path"
 	"strings"
 
-	"github.com/vomitselfie/Lil-Disc/chatkit/components/embed"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/gtkutil"
+	"github.com/vomitselfie/Lil-Disc/chatkit/components/embed"
 )
 
 // AttachEmbedContextMenu adds a right-click context menu to an embed widget

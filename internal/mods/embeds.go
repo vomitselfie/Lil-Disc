@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/vomitselfie/Lil-Disc/chatkit/components/embed"
 	"github.com/diamondburned/gotkit/app/prefs"
+	"github.com/vomitselfie/Lil-Disc/chatkit/components/embed"
 
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )

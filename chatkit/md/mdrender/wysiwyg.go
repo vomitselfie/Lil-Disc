@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/vomitselfie/Lil-Disc/chatkit/md"
-	"github.com/vomitselfie/Lil-Disc/chatkit/md/hl"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/gtkutil/textutil"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/hl"
 	"github.com/yuin/goldmark/ast"
 )
 

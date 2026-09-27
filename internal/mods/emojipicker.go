@@ -11,11 +11,11 @@ import (
 	"sync"
 
 	"github.com/diamondburned/arikawa/v3/discord"
-	unicodeemoji "github.com/enescakir/emoji"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/diamondburned/gotkit/components/onlineimage"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
+	unicodeemoji "github.com/enescakir/emoji"
 	"github.com/sahilm/fuzzy"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"

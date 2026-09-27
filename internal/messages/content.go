@@ -10,9 +10,6 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/state"
-	"github.com/vomitselfie/Lil-Disc/chatkit/components/author"
-	"github.com/vomitselfie/Lil-Disc/chatkit/md"
-	"github.com/vomitselfie/Lil-Disc/chatkit/md/mdrender"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
@@ -22,10 +19,13 @@ import (
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/diamondburned/ningen/v3/discordmd"
-	"libdb.so/ctxt"
+	"github.com/vomitselfie/Lil-Disc/chatkit/components/author"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/mdrender"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 	"github.com/vomitselfie/Lil-Disc/internal/mods"
+	"libdb.so/ctxt"
 )
 
 // Content is the message content widget.

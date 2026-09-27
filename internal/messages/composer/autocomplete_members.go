@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/vomitselfie/Lil-Disc/chatkit/components/autocomplete"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/components/onlineimage"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/sahilm/fuzzy"
+	"github.com/vomitselfie/Lil-Disc/chatkit/components/autocomplete"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 )
 

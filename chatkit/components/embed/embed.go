@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/vomitselfie/Lil-Disc/chatkit/components/progress"
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -30,6 +29,7 @@ import (
 	"github.com/diamondburned/gotkit/utils/cachegc"
 	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
+	"github.com/vomitselfie/Lil-Disc/chatkit/components/progress"
 
 	coreglib "github.com/diamondburned/gotk4/pkg/core/glib"
 )

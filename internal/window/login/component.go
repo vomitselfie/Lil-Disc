@@ -6,12 +6,12 @@ import (
 
 	"github.com/diamondburned/adaptive"
 	"github.com/diamondburned/arikawa/v3/session"
-	"github.com/vomitselfie/Lil-Disc/chatkit/components/secretdialog"
-	"github.com/vomitselfie/Lil-Disc/chatkit/kits/secret"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/pkg/errors"
+	"github.com/vomitselfie/Lil-Disc/chatkit/components/secretdialog"
+	"github.com/vomitselfie/Lil-Disc/chatkit/kits/secret"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 	"github.com/vomitselfie/Lil-Disc/internal/window/login/loading"
 )

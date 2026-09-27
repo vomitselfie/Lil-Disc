@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/vomitselfie/Lil-Disc/chatkit/components/autocomplete"
-	"github.com/vomitselfie/Lil-Disc/chatkit/md/mdrender"
 	"github.com/diamondburned/gotk4/pkg/core/gioutil"
 	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
@@ -22,6 +20,8 @@ import (
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/diamondburned/gotkit/utils/osutil"
 	"github.com/pkg/errors"
+	"github.com/vomitselfie/Lil-Disc/chatkit/components/autocomplete"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/mdrender"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )

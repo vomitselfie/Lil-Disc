@@ -4,12 +4,12 @@ package secretdialog
 import (
 	"context"
 
-	"github.com/vomitselfie/Lil-Disc/chatkit/kits/secret"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/textutil"
+	"github.com/vomitselfie/Lil-Disc/chatkit/kits/secret"
 )
 
 var inputLabelAttrs = textutil.Attrs(
