@@ -1,6 +1,7 @@
 package mods
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 	"sync"
 	"time"
 
@@ -17,13 +19,15 @@ import (
 	"github.com/diamondburned/gotkit/components/onlineimage"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 
+	"github.com/vomitselfie/Lil-Disc/internal/discordident"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 var enableGifPicker = prefs.NewBool(true, prefs.PropMeta{
 	Name:        "GIF Picker",
 	Section:     "Mods",
-	Description: "GIF search picker using Tenor, same as Discord's built-in GIF tab.",
+	Description: "GIF search picker backed by Discord's own GIF search, like the built-in GIF tab.",
 })
 
 var gifPickerCSS = lilcss.Applier("mod-gif-picker", `
@@ -58,43 +62,131 @@ var gifPickerCSS = lilcss.Applier("mod-gif-picker", `
 
 const gifPreviewSize = 100
 
-// Tenor API v2. Discord uses Tenor, so we do too.
-// The public key is the same one Discord's client uses.
+// GIFs come from Discord's own endpoints, as they do in the official client.
+// Discord proxies whichever provider it currently uses (it moved off Tenor),
+// so the picker follows provider changes without a code change, never holds
+// a third-party API key, and never makes a request the real client would
+// not make. The provider name is still a query parameter, so it can be
+// overridden if Discord moves again before this default is updated.
 const (
-	tenorBaseURL = "https://tenor.googleapis.com/v2"
-	tenorAPIKey  = "AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ"
+	gifAPIBase         = "https://discord.com/api/v9/gifs"
+	gifDefaultProvider = "klipy"
+	envGifProvider     = "LILDISC_GIF_PROVIDER"
 )
 
-type tenorResult struct {
-	URL     string // Tenor page URL (sent as message — Discord auto-embeds as GIFV)
-	Preview string // small preview URL (for grid thumbnails)
-	Title   string
+// gifResult is one entry of /gifs/search or /gifs/trending-gifs.
+type gifResult struct {
+	ID      string `json:"id"`
+	Title   string `json:"title"`
+	URL     string `json:"url"`     // provider page URL; sent as the message, Discord embeds it
+	Src     string `json:"src"`     // media in the requested media_format
+	GIFSrc  string `json:"gif_src"` // animated GIF rendition
+	Preview string `json:"preview"` // still frame, small
+	Width   int    `json:"width"`
+	Height  int    `json:"height"`
 }
 
-type tenorResponse struct {
-	Results []struct {
-		URL                string `json:"url"` // Tenor page URL
-		ContentDescription string `json:"content_description"`
-		MediaFormats       struct {
-			GIF struct {
-				URL string `json:"url"`
-			} `json:"gif"`
-			TinyGIF struct {
-				URL string `json:"url"`
-			} `json:"tinygif"`
-			NanoGIF struct {
-				URL string `json:"url"`
-			} `json:"nanogif"`
-			MediumGIF struct {
-				URL string `json:"url"`
-			} `json:"mediumgif"`
-		} `json:"media_formats"`
-	} `json:"results"`
+// thumbnail returns the lightest URL that shows the GIF in the grid.
+func (g gifResult) thumbnail() string {
+	for _, u := range []string{g.Preview, g.GIFSrc, g.Src} {
+		if u != "" {
+			return u
+		}
+	}
+	return g.URL
+}
+
+func gifProvider() string {
+	if p := os.Getenv(envGifProvider); p != "" {
+		return p
+	}
+	return gifDefaultProvider
+}
+
+// gifQuery builds the query string the client sends with every GIF request.
+func gifQuery(extra url.Values) url.Values {
+	q := url.Values{
+		"media_format": {"mp4"},
+		"provider":     {gifProvider()},
+		"locale":       {discordident.Get().Locale},
+	}
+	for k, v := range extra {
+		q[k] = v
+	}
+	return q
+}
+
+func gifRequest(method, endpoint, token string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest(method, endpoint, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", token)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	discordident.Get().Apply(req)
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		resp.Body.Close()
+		return nil, fmt.Errorf("%s %s: %s", method, endpoint, resp.Status)
+	}
+	return resp, nil
+}
+
+// fetchGifs reads a list of GIFs from a Discord /gifs endpoint.
+func fetchGifs(token, path string, query url.Values) ([]gifResult, error) {
+	resp, err := gifRequest("GET", gifAPIBase+path+"?"+query.Encode(), token, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var results []gifResult
+	if err := decodeJSONResponse(resp, &results); err != nil {
+		return nil, err
+	}
+
+	// Drop entries with nothing to send; the grid cannot use them.
+	kept := results[:0]
+	for _, r := range results {
+		if r.URL != "" {
+			kept = append(kept, r)
+		}
+	}
+	return kept, nil
+}
+
+func gifSearch(token, query string) ([]gifResult, error) {
+	return fetchGifs(token, "/search", gifQuery(url.Values{"q": {query}}))
+}
+
+func gifTrending(token string) ([]gifResult, error) {
+	return fetchGifs(token, "/trending-gifs", gifQuery(nil))
+}
+
+// gifSelected tells Discord which result was picked for which query, as the
+// client does. It is best effort: a failure only loses the report.
+func gifSelected(token string, gif gifResult, query string) {
+	if gif.ID == "" {
+		return
+	}
+	body, _ := json.Marshal(map[string]string{"id": gif.ID, "q": query})
+	resp, err := gifRequest("POST", gifAPIBase+"/select", token, bytes.NewReader(body))
+	if err != nil {
+		slog.Debug("gif select report failed", "err", err)
+		return
+	}
+	resp.Body.Close()
 }
 
 var httpClient = &http.Client{Timeout: 10 * time.Second}
 
-// maxJSONResponseSize bounds API JSON payloads (Tenor, Discord) so a hostile
+// maxJSONResponseSize bounds API JSON payloads so a hostile
 // or runaway endpoint can't OOM the client. 4 MiB is ~30x larger than any
 // legitimate response we've seen.
 const maxJSONResponseSize = 4 << 20
@@ -110,83 +202,6 @@ func decodeJSONResponse(resp *http.Response, dest interface{}) error {
 	return json.Unmarshal(body, dest)
 }
 
-func tenorSearch(query string, limit int) ([]tenorResult, error) {
-	endpoint := tenorBaseURL + "/search"
-	params := url.Values{
-		"key":         {tenorAPIKey},
-		"q":           {query},
-		"limit":       {tenorLimit(limit)},
-		"media_filter": {"gif,tinygif"},
-		"contentfilter": {"medium"},
-	}
-
-	resp, err := httpClient.Get(endpoint + "?" + params.Encode())
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var data tenorResponse
-	if err := decodeJSONResponse(resp, &data); err != nil {
-		return nil, err
-	}
-
-	return parseTenorResults(data), nil
-}
-
-func tenorTrending(limit int) ([]tenorResult, error) {
-	endpoint := tenorBaseURL + "/featured"
-	params := url.Values{
-		"key":         {tenorAPIKey},
-		"limit":       {tenorLimit(limit)},
-		"media_filter": {"gif,tinygif"},
-		"contentfilter": {"medium"},
-	}
-
-	resp, err := httpClient.Get(endpoint + "?" + params.Encode())
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var data tenorResponse
-	if err := decodeJSONResponse(resp, &data); err != nil {
-		return nil, err
-	}
-
-	return parseTenorResults(data), nil
-}
-
-func parseTenorResults(data tenorResponse) []tenorResult {
-	results := make([]tenorResult, 0, len(data.Results))
-	for _, r := range data.Results {
-		// Send the Tenor page URL, not the raw GIF file URL.
-		// Discord recognizes Tenor page URLs and auto-embeds them as
-		// animated GIFVs, just like the official client.
-		sendURL := r.URL
-		if sendURL == "" {
-			// Fallback to raw GIF if no page URL.
-			sendURL = r.MediaFormats.GIF.URL
-		}
-		preview := r.MediaFormats.TinyGIF.URL
-		if preview == "" {
-			preview = r.MediaFormats.NanoGIF.URL
-		}
-		if sendURL == "" {
-			continue
-		}
-		results = append(results, tenorResult{
-			URL:     sendURL,
-			Preview: preview,
-			Title:   r.ContentDescription,
-		})
-	}
-	return results
-}
-
-// Tenor API calls use limit as a string param.
-func tenorLimit(n int) string { return fmt.Sprintf("%d", n) }
-
 // NewGifPickerPopover creates a GIF picker popover for the composer.
 // onPick receives the full GIF URL to be sent as message content.
 func NewGifPickerPopover(ctx context.Context, onPick func(string)) *gtk.Popover {
@@ -194,9 +209,15 @@ func NewGifPickerPopover(ctx context.Context, onPick func(string)) *gtk.Popover 
 		return nil
 	}
 
+	state := gtkcord.FromContext(ctx)
+	if state == nil {
+		return nil
+	}
+	token := state.Token()
+
 	search := gtk.NewSearchEntry()
 	search.AddCSSClass("mod-gif-search")
-	search.SetPlaceholderText("Search Tenor...")
+	search.SetPlaceholderText("Search GIFs...")
 
 	gifBox := gtk.NewBox(gtk.OrientationVertical, 0)
 	gifBox.AddCSSClass("mod-gif-grid")
@@ -222,7 +243,7 @@ func NewGifPickerPopover(ctx context.Context, onPick func(string)) *gtk.Popover 
 		lastSearch string
 	)
 
-	populateResults := func(results []tenorResult, gen int) {
+	populateResults := func(results []gifResult, query string, gen int) {
 		searchMu.Lock()
 		if gen != searchGen {
 			searchMu.Unlock()
@@ -251,11 +272,7 @@ func NewGifPickerPopover(ctx context.Context, onPick func(string)) *gtk.Popover 
 			img.EnableAnimation().OnHover()
 			img.SetSizeRequest(gifPreviewSize, gifPreviewSize)
 			img.SetContentFit(gtk.ContentFitContain)
-			if gif.Preview != "" {
-				img.SetURL(gif.Preview)
-			} else {
-				img.SetURL(gif.URL)
-			}
+			img.SetURL(gif.thumbnail())
 
 			box := gtk.NewBox(gtk.OrientationVertical, 0)
 			box.AddCSSClass("mod-gif-item")
@@ -268,6 +285,7 @@ func NewGifPickerPopover(ctx context.Context, onPick func(string)) *gtk.Popover 
 			click.ConnectReleased(func(n int, x, y float64) {
 				onPick(gif.URL)
 				popover.Popdown()
+				go gifSelected(token, gif, query)
 			})
 			box.AddController(click)
 			flow.Append(box)
@@ -289,17 +307,17 @@ func NewGifPickerPopover(ctx context.Context, onPick func(string)) *gtk.Popover 
 		gifBox.Append(label)
 
 		go func() {
-			var results []tenorResult
+			var results []gifResult
 			var err error
 
 			if query == "" {
-				results, err = tenorTrending(30)
+				results, err = gifTrending(token)
 			} else {
-				results, err = tenorSearch(query, 30)
+				results, err = gifSearch(token, query)
 			}
 
 			if err != nil {
-				slog.Warn("tenor search failed", "err", err, "query", query)
+				slog.Warn("gif search failed", "err", err, "query", query, "provider", gifProvider())
 				glib.IdleAdd(func() {
 					searchMu.Lock()
 					if gen != searchGen {
@@ -315,7 +333,7 @@ func NewGifPickerPopover(ctx context.Context, onPick func(string)) *gtk.Popover 
 				return
 			}
 
-			glib.IdleAdd(func() { populateResults(results, gen) })
+			glib.IdleAdd(func() { populateResults(results, query, gen) })
 		}()
 	}
 

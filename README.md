@@ -94,7 +94,7 @@ Everything below is optional. Open **Preferences → Mods** and flip switches.
 - Drag files onto the message box to upload them.
 - Paste images from the clipboard with Ctrl+V, including ones copied from a browser.
 - A preview bar shows what you're replying to.
-- Built-in GIF picker (Tenor), sticker picker and server emoji picker with fuzzy search.
+- Built-in GIF picker (Discord's own GIF search), sticker picker and server emoji picker with fuzzy search.
 - Files too big for Discord's free upload limit go to [0x0.st](https://0x0.st) instead, and the link is dropped into your message. The size limit is adjustable, because Discord keeps changing theirs.
 
 **Finding your way around**
@@ -221,7 +221,7 @@ internal/mods/
   embeds.go          GIF/video autoplay, GIFV-to-GIF, embed improvements
   emojipicker.go     Server emoji picker
   friendlist.go      Collapsible "More" friends dropdown in DM sidebar
-  gifpicker.go       Tenor-backed GIF picker
+  gifpicker.go       GIF picker on Discord's GIF search
   keybinds.go        Keyboard shortcuts
   lazyload.go        Lazy load embeds
   mediahost.go       Oversize-upload fallback (0x0.st)
