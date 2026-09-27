@@ -147,7 +147,9 @@ func qsListLoading() gtk.Widgetter {
 }
 
 func qsListPlaceholder() gtk.Widgetter {
-	l := gtk.NewLabel("Where would you like to go?")
+	l := gtk.NewLabel("Where would you like to go?\n" +
+		"@ for people, # for channels, ! for servers, > for commands")
+	l.SetJustify(gtk.JustifyCenter)
 	l.SetAttributes(textutil.Attrs(
 		pango.NewAttrScale(1.15),
 	))
@@ -168,10 +170,6 @@ func (qs *QuickSwitcher) do() {
 		qs.entries[i] = entry{}
 	}
 	qs.entries = qs.entries[:0]
-
-	if qs.text == "" {
-		return
-	}
 
 	for _, match := range qs.index.search(qs.text) {
 		e := entry{
@@ -198,6 +196,8 @@ func (qs *QuickSwitcher) choose(n int) {
 		ok = parent.ActivateAction("app.open-channel", gtkcord.NewChannelIDVariant(item.ID))
 	case guildItem:
 		ok = parent.ActivateAction("app.open-guild", gtkcord.NewGuildIDVariant(item.ID))
+	case commandItem:
+		ok = parent.ActivateAction(item.action, nil)
 	}
 	if !ok {
 		slog.Error(

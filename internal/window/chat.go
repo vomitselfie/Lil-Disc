@@ -457,6 +457,7 @@ func (p *ChatPage) OpenChannel(chID discord.ChannelID) {
 
 	// Open the channel in the message view.
 	tab.switchToChannel(chID)
+	gtkcord.NoteChannelOpened(chID)
 
 	page := p.tabView.Page(tab)
 	updateTabInfo(p.ctx, page, chID)

@@ -198,3 +198,48 @@ func (it guildItem) Row(ctx context.Context) *gtk.ListBoxRow {
 	row.SetChild(box)
 	return row
 }
+
+// commandItem is an application action offered in ">" mode, which makes the
+// switcher a small command palette.
+type commandItem struct {
+	name   string
+	action string // detailed action name, e.g. "app.preferences"
+	icon   string
+}
+
+// commands are the actions the palette offers. Each is an existing window
+// or application action, so the palette adds no behaviour of its own.
+var commands = []commandItem{
+	{"Preferences", "app.preferences", "preferences-system-symbolic"},
+	{"Search This Channel", "win.message-search", "system-search-symbolic"},
+	{"Search Cached Messages", "win.message-search-all", "system-search-symbolic"},
+	{"Open Direct Messages", "win.open-dms", "chat-bubbles-empty-symbolic"},
+	{"Set Status: Online", "win.set-online", "user-available-symbolic"},
+	{"Set Status: Idle", "win.set-idle", "user-idle-symbolic"},
+	{"Set Status: Do Not Disturb", "win.set-dnd", "user-busy-symbolic"},
+	{"Set Status: Invisible", "win.set-invisible", "user-invisible-symbolic"},
+	{"Keyboard Shortcuts", "win.keybind-help", "input-keyboard-symbolic"},
+	{"Logs", "app.logs", "dialog-information-symbolic"},
+	{"About LilDisc", "app.about", "help-about-symbolic"},
+	{"Quit", "app.quit", "application-exit-symbolic"},
+}
+
+func (it commandItem) String() string { return it.name }
+
+func (it commandItem) Row(ctx context.Context) *gtk.ListBoxRow {
+	icon := gtk.NewImageFromIconName(it.icon)
+	icon.AddCSSClass("quickswitcher-guild-icon")
+
+	name := gtk.NewLabel(it.name)
+	name.SetHExpand(true)
+	name.SetXAlign(0)
+
+	box := gtk.NewBox(gtk.OrientationHorizontal, 0)
+	box.Append(icon)
+	box.Append(name)
+
+	row := gtk.NewListBoxRow()
+	guildCSS(row)
+	row.SetChild(box)
+	return row
+}
