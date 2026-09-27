@@ -27,7 +27,7 @@ import (
 var enableGifPicker = prefs.NewBool(true, prefs.PropMeta{
 	Name:        "GIF Picker",
 	Section:     "Mods",
-	Description: "GIF search picker backed by Discord's own GIF search, like the built-in GIF tab.",
+	Description: "GIF search picker backed by Discord's own GIF search, like the built-in GIF tab. Applies to channels opened afterwards.",
 })
 
 var gifPickerCSS = lilcss.Applier("mod-gif-picker", `

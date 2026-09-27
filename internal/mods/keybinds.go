@@ -15,13 +15,15 @@ var enableKeybinds = prefs.NewBool(true, prefs.PropMeta{
 	Description: "Add extra keyboard shortcuts (Ctrl+/ for help).",
 })
 
+// The shortcut is always registered and the preference is checked when it
+// fires, so the toggle takes effect immediately.
 func initKeybinds(ctx context.Context, win ActionWidget) {
-	if !enableKeybinds.Value() {
-		return
-	}
-
 	gtkutil.AddActions(win, map[string]func(){
-		"keybind-help": func() { showKeybindHelp(win) },
+		"keybind-help": func() {
+			if enableKeybinds.Value() {
+				showKeybindHelp(win)
+			}
+		},
 	})
 
 	gtkutil.AddActionShortcuts(win, map[string]string{

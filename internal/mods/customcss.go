@@ -14,14 +14,29 @@ import (
 var enableCustomCSS = prefs.NewBool(true, prefs.PropMeta{
 	Name:        "Load Custom CSS",
 	Section:     "Mods",
-	Description: "Load custom CSS from ~/.config/lildisc/custom.css on startup.",
+	Description: "Load custom CSS from ~/.config/lildisc/custom.css. Toggling reloads the file.",
 })
 
-func initCustomCSS(ctx context.Context) {
-	if !enableCustomCSS.Value() {
-		return
-	}
+// customCSSProvider is the installed custom.css, or nil.
+var customCSSProvider *gtk.CSSProvider
 
+// initCustomCSS keeps custom.css installed while the preference is on, and
+// reloads it each time the preference is turned on.
+func initCustomCSS(ctx context.Context) {
+	enableCustomCSS.Subscribe(func() {
+		if customCSSProvider != nil {
+			if display := gdk.DisplayGetDefault(); display != nil {
+				gtk.StyleContextRemoveProviderForDisplay(display, customCSSProvider)
+			}
+			customCSSProvider = nil
+		}
+		if enableCustomCSS.Value() {
+			loadCustomCSS()
+		}
+	})
+}
+
+func loadCustomCSS() {
 	cssPath, err := customCSSPath()
 	if err != nil {
 		slog.Warn("cannot determine config dir for custom CSS", "err", err)
@@ -45,6 +60,7 @@ func initCustomCSS(ctx context.Context) {
 			// USER+110, so custom.css can still override anything.
 			gtk.STYLE_PROVIDER_PRIORITY_USER+200,
 		)
+		customCSSProvider = provider
 		slog.Info("loaded custom CSS", "path", cssPath)
 	}
 }

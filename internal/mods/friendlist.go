@@ -21,7 +21,7 @@ import (
 var enableFriendList = prefs.NewBool(true, prefs.PropMeta{
 	Name:        "More Dropdown in DMs",
 	Section:     "Mods",
-	Description: "Show a collapsible \"More\" list of friends without an active DM under the DM list. Clicking a friend opens a new DM with them.",
+	Description: "Show a collapsible \"More\" list of friends without an active DM under the DM list. Clicking a friend opens a new DM with them. Takes effect after restarting LilDisc.",
 })
 
 var _ = lilcss.WriteCSS(`

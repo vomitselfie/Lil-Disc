@@ -22,7 +22,7 @@ import (
 var enableDragDrop = prefs.NewBool(true, prefs.PropMeta{
 	Name:        "Drag-and-Drop Upload",
 	Section:     "Mods",
-	Description: "Enable drag-and-drop file upload onto the message area.",
+	Description: "Enable drag-and-drop file upload onto the message area. Applies to channels opened afterwards.",
 })
 
 var _ = lilcss.WriteCSS(`

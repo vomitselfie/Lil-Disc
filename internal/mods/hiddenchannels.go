@@ -12,7 +12,7 @@ import (
 var enableHiddenChannels = prefs.NewBool(false, prefs.PropMeta{
 	Name:        "Show Hidden Channels",
 	Section:     "Mods",
-	Description: "Show channels you don't have access to with a lock icon, greyed out. May violate Discord's Terms of Service.",
+	Description: "Show channels you don't have access to with a lock icon, greyed out. May violate Discord's Terms of Service. Applies when a server is next opened.",
 })
 
 var _ = lilcss.WriteCSS(`

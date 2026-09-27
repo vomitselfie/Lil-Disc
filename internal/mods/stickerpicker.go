@@ -27,7 +27,7 @@ import (
 var enableStickerPicker = prefs.NewBool(true, prefs.PropMeta{
 	Name:        "Sticker Picker",
 	Section:     "Mods",
-	Description: "Picker showing all available guild stickers, organized by server.",
+	Description: "Picker showing all available guild stickers, organized by server. Applies to channels opened afterwards.",
 })
 
 var stickerPickerCSS = lilcss.Applier("mod-sticker-picker", `

@@ -18,7 +18,7 @@ import (
 var enableInlineAudio = prefs.NewBool(true, prefs.PropMeta{
 	Name:        "Inline Audio Player",
 	Section:     "Mods",
-	Description: "Play voice messages and other audio attachments inline with a play/seek control instead of showing a download link.",
+	Description: "Play voice messages and other audio attachments inline with a play/seek control instead of showing a download link. Applies to messages shown afterwards.",
 })
 
 var _ = lilcss.WriteCSS(`

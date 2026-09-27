@@ -83,20 +83,26 @@ const maxSearchResults = 50
 
 // InitSearch registers the search shortcuts on the window.
 // Called from HookState since we need Discord state for search.
+//
+// The shortcuts are always registered and the preference is checked when
+// they fire, so turning search on or off takes effect immediately.
 func InitSearch(ctx context.Context, win ActionWidget) {
-	if !enableSearch.Value() {
-		return
-	}
-
 	gtkutil.AddActions(win, map[string]func(){
 		"message-search": func() {
+			if !enableSearch.Value() {
+				return
+			}
 			if ch := ActiveChannel(); ch.IsValid() {
 				showSearchDialog(ctx, win, scopeChannel, ch)
 			} else {
 				showSearchDialog(ctx, win, scopeCached, 0)
 			}
 		},
-		"message-search-all": func() { showSearchDialog(ctx, win, scopeCached, 0) },
+		"message-search-all": func() {
+			if enableSearch.Value() {
+				showSearchDialog(ctx, win, scopeCached, 0)
+			}
+		},
 	})
 
 	gtkutil.AddActionShortcuts(win, map[string]string{

@@ -24,7 +24,7 @@ import (
 var enableEmojiPicker = prefs.NewBool(true, prefs.PropMeta{
 	Name:        "Server Emoji Picker",
 	Section:     "Mods",
-	Description: "Custom emoji picker showing all server emojis organized by guild.",
+	Description: "Custom emoji picker showing all server emojis organized by guild. Applies to channels opened afterwards.",
 })
 
 var enableFakeNitro = prefs.NewBool(false, prefs.PropMeta{

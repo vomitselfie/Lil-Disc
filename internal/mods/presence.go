@@ -5,6 +5,7 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
@@ -14,7 +15,7 @@ import (
 var enablePresence = prefs.NewBool(true, prefs.PropMeta{
 	Name:        "Status Indicators",
 	Section:     "Mods",
-	Description: "Show colored status dots next to usernames.",
+	Description: "Show colored status dots next to usernames. Applies to messages shown afterwards.",
 })
 
 var _ = lilcss.WriteCSS(`
@@ -99,18 +100,28 @@ func updatePresenceDot(state *gtkcord.State, dot *gtk.Label, userID discord.User
 	dot.RemoveCSSClass("mod-presence-dnd")
 	dot.RemoveCSSClass("mod-presence-offline")
 
+	// Each status has its own shape as well as its own colour, as in
+	// Discord's client, so it reads without colour vision; the label also
+	// carries the status name for screen readers, which would otherwise
+	// announce only the glyph.
 	switch status {
 	case discord.OnlineStatus:
 		dot.AddCSSClass("mod-presence-online")
+		dot.SetText("●")
 	case discord.IdleStatus:
 		dot.AddCSSClass("mod-presence-idle")
+		dot.SetText("◐")
 	case discord.DoNotDisturbStatus:
 		dot.AddCSSClass("mod-presence-dnd")
+		dot.SetText("⊖")
 	default:
 		dot.AddCSSClass("mod-presence-offline")
+		dot.SetText("○")
 	}
 
 	dot.SetTooltipText(statusText(status))
+	dot.UpdateProperty([]gtk.AccessibleProperty{gtk.AccessiblePropertyLabel},
+		[]glib.Value{*glib.NewValue(statusText(status))})
 }
 
 // PresenceTooltip builds a rich tooltip string showing a user's status,

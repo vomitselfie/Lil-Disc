@@ -74,7 +74,7 @@ func trayIconData() sniIconPixmap {
 var enableTray = prefs.NewBool(true, prefs.PropMeta{
 	Name:        "Close to Tray",
 	Section:     "Mods",
-	Description: "Minimize to system tray when closing the window instead of quitting.",
+	Description: "Minimize to system tray when closing the window instead of quitting. The tray icon appears or goes away after restarting LilDisc.",
 })
 
 const (
@@ -96,7 +96,9 @@ func initTray(ctx context.Context, win ActionWidget) {
 	}
 
 	// Hold the application so it stays alive when the window is hidden.
-	app.FromContext(ctx).Hold()
+	application := app.FromContext(ctx)
+	application.Hold()
+	held := true
 
 	// Intercept window close: hide instead of destroy.
 	base := gtk.BaseWidget(win)
@@ -109,6 +111,13 @@ func initTray(ctx context.Context, win ActionWidget) {
 		gtkWin := base.Root().CastType(gtk.GTypeWindow).(*gtk.Window)
 		gtkWin.ConnectCloseRequest(func() (stop bool) {
 			if !enableTray.Value() {
+				// Turned off since startup: drop the hold too, or closing
+				// the window would leave LilDisc running with no window
+				// and no tray icon to bring it back.
+				if held {
+					application.Release()
+					held = false
+				}
 				return false
 			}
 			gtkWin.SetVisible(false)

@@ -227,12 +227,14 @@ func (m *manager) activate(ctx context.Context) {
 	m.win = window.NewWindow(ctx)
 	m.win.Present()
 
-	// mod: initialize all mods after window is ready
-	mods.Init(ctx, m.win)
-
 	prefs.AsyncLoadSaved(ctx, func(err error) {
 		if err != nil {
 			app.Error(ctx, err)
 		}
+		// mod: initialize mods once saved preferences are in. Initialising
+		// them first meant every mod read at startup saw its default, so
+		// turning off the tray, custom CSS or extra keybinds never survived
+		// a restart.
+		mods.Init(ctx, m.win)
 	})
 }

@@ -17,7 +17,7 @@ import (
 var enableReplyPreview = prefs.NewBool(true, prefs.PropMeta{
 	Name:        "Reply Preview Bar",
 	Section:     "Mods",
-	Description: "Show a preview bar above the composer when replying to a message.",
+	Description: "Show a preview bar above the composer when replying to a message. Applies to channels opened afterwards.",
 })
 
 var _ = lilcss.WriteCSS(`
