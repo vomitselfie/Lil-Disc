@@ -74,7 +74,7 @@ func trayIconData() sniIconPixmap {
 var enableTray = prefs.NewBool(true, prefs.PropMeta{
 	Name:        "Close to Tray",
 	Section:     "Mods",
-	Description: "Minimize to system tray when closing the window instead of quitting. The tray icon appears or goes away after restarting LilDisc.",
+	Description: "Minimize to system tray when closing the window instead of quitting.",
 })
 
 const (
@@ -90,17 +90,52 @@ type trayItem struct {
 	win  gtk.Widgetter
 }
 
+// initTray keeps the tray in step with its preference: turning it on holds
+// the application open and shows the icon, turning it off drops both, with
+// no restart needed.
 func initTray(ctx context.Context, win ActionWidget) {
-	if !enableTray.Value() {
-		return
-	}
-
-	// Hold the application so it stays alive when the window is hidden.
 	application := app.FromContext(ctx)
-	application.Hold()
-	held := true
 
-	// Intercept window close: hide instead of destroy.
+	var (
+		held     bool
+		stopIcon context.CancelFunc
+	)
+
+	apply := func() {
+		if enableTray.Value() {
+			if !held {
+				// Hold the application so it stays alive when the window
+				// is hidden.
+				application.Hold()
+				held = true
+			}
+			if stopIcon == nil {
+				iconCtx, cancel := context.WithCancel(ctx)
+				stopIcon = cancel
+				go func() {
+					if err := startSNI(iconCtx, win); err != nil {
+						slog.Warn("failed to start system tray icon", "err", err)
+						slog.Info("close-to-tray will still hide the window, but no tray icon will appear")
+					}
+				}()
+			}
+			return
+		}
+
+		// Off: closing startSNI's D-Bus connection makes the tray host drop
+		// the icon, and releasing the hold lets closing the window quit.
+		if stopIcon != nil {
+			stopIcon()
+			stopIcon = nil
+		}
+		if held {
+			application.Release()
+			held = false
+		}
+	}
+	enableTray.Subscribe(apply)
+
+	// Intercept window close: hide instead of destroy while the tray is on.
 	base := gtk.BaseWidget(win)
 	var connected bool
 	base.ConnectMap(func() {
@@ -111,27 +146,12 @@ func initTray(ctx context.Context, win ActionWidget) {
 		gtkWin := base.Root().CastType(gtk.GTypeWindow).(*gtk.Window)
 		gtkWin.ConnectCloseRequest(func() (stop bool) {
 			if !enableTray.Value() {
-				// Turned off since startup: drop the hold too, or closing
-				// the window would leave LilDisc running with no window
-				// and no tray icon to bring it back.
-				if held {
-					application.Release()
-					held = false
-				}
 				return false
 			}
 			gtkWin.SetVisible(false)
 			return true
 		})
 	})
-
-	// Start the SNI tray icon.
-	go func() {
-		if err := startSNI(ctx, win); err != nil {
-			slog.Warn("failed to start system tray icon", "err", err)
-			slog.Info("close-to-tray will still hide the window, but no tray icon will appear")
-		}
-	}()
 }
 
 func startSNI(ctx context.Context, win gtk.Widgetter) error {
