@@ -20,6 +20,7 @@ import (
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/vomitselfie/Lil-Disc/internal/asyncop"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/history"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
@@ -220,9 +221,13 @@ func showSearchDialog(ctx context.Context, win gtk.Widgetter, scope searchScope,
 func (d *searchDialog) showIdle() {
 	d.clear()
 	if d.scope == scopeChannel {
-		d.scopeLb.SetText(locale.Get("Type to filter recent messages. Press Enter to search the whole channel on Discord."))
+		d.scopeLb.SetText(locale.Get("Type to filter recent messages; from: has: before: and after: work too. Press Enter to search the whole channel on Discord."))
 	} else {
-		d.scopeLb.SetText(locale.Get("Searches messages LilDisc has already loaded, in every channel, newest first."))
+		if HistoryEnabled() {
+			d.scopeLb.SetText(locale.Get("Searches your local message history and everything loaded, newest first. Filters: from: in: has:image/video/file/link/embed before: after: on:"))
+		} else {
+			d.scopeLb.SetText(locale.Get("Searches messages LilDisc has loaded, in every channel, newest first. Filters: from: in: has:image/video/file/link/embed before: after: on:"))
+		}
 	}
 }
 
@@ -233,9 +238,9 @@ func (d *searchDialog) searchLocal(query string) {
 
 	var matches []discord.Message
 	if d.scope == scopeChannel {
-		matches = matchCached(d.state, []discord.ChannelID{d.chID}, query)
+		matches = d.matchLocal([]discord.ChannelID{d.chID}, query)
 	} else {
-		matches = matchCached(d.state, cachedChannels(d.state), query)
+		matches = d.matchLocal(cachedChannels(d.state), query)
 	}
 
 	if !d.latest.IsCurrent(gen) {
@@ -247,7 +252,11 @@ func (d *searchDialog) searchLocal(query string) {
 			"%d recent matches. Press Enter to search all of %s on Discord.",
 			len(matches), d.chName))
 	} else {
-		d.scopeLb.SetText(locale.Sprintf("%d matches in cached messages.", len(matches)))
+		if HistoryEnabled() {
+			d.scopeLb.SetText(locale.Sprintf("%d matches in cached messages and local history, newest first.", len(matches)))
+		} else {
+			d.scopeLb.SetText(locale.Sprintf("%d matches in cached messages, newest first.", len(matches)))
+		}
 	}
 	d.show(matches, d.scope == scopeCached)
 }
@@ -263,7 +272,13 @@ func (d *searchDialog) searchServer(query string) {
 	chID := d.chID
 
 	go func() {
-		data := api.SearchData{Content: query, ChannelID: chID}
+		// Discord's search takes the text and one has: kind; the other
+		// filters are for local search.
+		q := history.ParseQuery(query)
+		data := api.SearchData{Content: strings.Join(q.Terms, " "), ChannelID: chID}
+		if name := hasFilterName(q.Has); name != "" {
+			data.Has = name
+		}
 
 		var resp api.SearchResponse
 		var err error
@@ -282,7 +297,7 @@ func (d *searchDialog) searchServer(query string) {
 				slog.Warn("message search failed", "channel", chID, "err", err)
 				d.clear()
 				d.status(locale.Get("Discord search failed. The results below are from cache."))
-				d.show(matchCached(d.state, []discord.ChannelID{chID}, query), false)
+				d.show(d.matchLocal([]discord.ChannelID{chID}, query), false)
 				return
 			}
 
@@ -309,22 +324,51 @@ func searchHit(group []discord.Message) discord.Message {
 	return group[len(group)/2]
 }
 
-// matchCached returns cached messages in channels whose content contains
-// query, case-insensitively, newest first.
-func matchCached(state *gtkcord.State, channels []discord.ChannelID, query string) []discord.Message {
-	offline := state.Offline()
-	needle := strings.ToLower(query)
+// matchLocal searches cached messages in channels and, for a search across
+// channels with the local history on, the archive too. The query uses
+// Discord's filter syntax (see history.Query). Results are newest first.
+func (d *searchDialog) matchLocal(channels []discord.ChannelID, query string) []discord.Message {
+	q := history.ParseQuery(query)
+	if q.Empty() {
+		return nil
+	}
 
-	var matches []discord.Message
+	names := make(map[discord.ChannelID]string)
+	channelName := func(e history.Entry) string {
+		name, ok := names[e.ChannelID]
+		if !ok {
+			name = gtkcord.ChannelNameFromID(d.ctx, e.ChannelID)
+			names[e.ChannelID] = name
+		}
+		return name
+	}
+
+	// Prefer the cabinet's copy of a message, which is complete, over the
+	// archive's reduced one.
+	found := make(map[discord.MessageID]discord.Message)
+	offline := d.state.Offline()
 	for _, chID := range channels {
 		msgs, _ := offline.Cabinet.Messages(chID)
-		for _, msg := range msgs {
-			if strings.Contains(strings.ToLower(msg.Content), needle) {
-				matches = append(matches, msg)
+		for i := range msgs {
+			if q.Match(history.EntryFromMessage(&msgs[i]), channelName) {
+				found[msgs[i].ID] = msgs[i]
 			}
 		}
 	}
 
+	if d.scope == scopeCached && HistoryEnabled() {
+		EachHistoryEntry(func(e history.Entry) bool {
+			if _, ok := found[e.ID]; !ok && q.Match(e, channelName) {
+				found[e.ID] = e.Message()
+			}
+			return true
+		})
+	}
+
+	matches := make([]discord.Message, 0, len(found))
+	for _, m := range found {
+		matches = append(matches, m)
+	}
 	// Snowflakes sort by time, so this is newest first across channels.
 	slices.SortFunc(matches, func(a, b discord.Message) int {
 		switch {
@@ -339,6 +383,24 @@ func matchCached(state *gtkcord.State, channels []discord.ChannelID, query strin
 		matches = matches[:maxSearchResults]
 	}
 	return matches
+}
+
+// hasFilterName maps a has: flag to Discord's search parameter, for the
+// first kind set.
+func hasFilterName(f history.Flags) string {
+	switch {
+	case f&history.HasImage != 0:
+		return "image"
+	case f&history.HasVideo != 0:
+		return "video"
+	case f&history.HasFile != 0:
+		return "file"
+	case f&history.HasLink != 0:
+		return "link"
+	case f&history.HasEmbed != 0:
+		return "embed"
+	}
+	return ""
 }
 
 // cachedChannels lists every guild and private channel in the cabinet.

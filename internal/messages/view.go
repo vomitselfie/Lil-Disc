@@ -674,6 +674,7 @@ func (v *View) AddBacklog(msgs []discord.Message) {
 
 	v.setPageToMain()
 	v.Scroll.ScrollToBottom()
+	mods.RecordMessages(msgs...)
 
 	summariesMap := v.messageSummaries()
 
@@ -703,6 +704,7 @@ func (v *View) loadMore() {
 
 	// TODO: combine this with AddBacklog.
 	upsertMessages := func(msgs []discord.Message) {
+		mods.RecordMessages(msgs...)
 		unlock := v.Scroll.LockScroll()
 		glib.IdleAdd(unlock)
 
@@ -1346,6 +1348,7 @@ func (v *View) jumpTo(id discord.MessageID, highlight bool) {
 			slices.SortFunc(msgs, func(a, b discord.Message) int {
 				return cmp.Compare(a.ID, b.ID)
 			})
+			mods.RecordMessages(msgs...)
 
 			v.unload()
 			v.setPageToMain()

@@ -219,6 +219,7 @@ var commands = []commandItem{
 	{"Set Status: Do Not Disturb", "win.set-dnd", "user-busy-symbolic"},
 	{"Set Status: Invisible", "win.set-invisible", "user-invisible-symbolic"},
 	{"Keyboard Shortcuts", "win.keybind-help", "input-keyboard-symbolic"},
+	{"Clear Message History", "win.clear-history", "user-trash-symbolic"},
 	{"Logs", "app.logs", "dialog-information-symbolic"},
 	{"About LilDisc", "app.about", "help-about-symbolic"},
 	{"Quit", "app.quit", "application-exit-symbolic"},
