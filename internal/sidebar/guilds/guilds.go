@@ -3,6 +3,7 @@ package guilds
 import (
 	"context"
 	"log/slog"
+	"slices"
 	"sort"
 
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -177,7 +178,20 @@ func (v *View) SetFolders(folders []gateway.GuildFolder) {
 
 	v.clear()
 
-	for i, folder := range folders {
+	member := v.memberGuilds()
+
+	for i := range folders {
+		// Discord's folder settings keep the IDs of servers the account has
+		// since left; its own client skips them. Drawing them left a
+		// disabled "(guild unavailable)" button that never went away.
+		folder := folders[i]
+		folder.GuildIDs = slices.DeleteFunc(slices.Clone(folder.GuildIDs), func(id discord.GuildID) bool {
+			return !member[id]
+		})
+		if len(folder.GuildIDs) == 0 {
+			continue
+		}
+
 		if folder.ID == 0 {
 			// Contains a single guild, so we just unbox it.
 			g := NewGuild(v.ctx, folder.GuildIDs[0])
@@ -188,10 +202,28 @@ func (v *View) SetFolders(folders []gateway.GuildFolder) {
 		}
 
 		f := NewFolder(v.ctx)
-		f.Set(&folders[i])
+		f.Set(&folder)
 
 		v.append(f)
 	}
+}
+
+// memberGuilds returns every guild the account is in: those the cabinet
+// holds and those the gateway listed as unavailable during an outage, which
+// keep their placeholder until they come back.
+func (v *View) memberGuilds() map[discord.GuildID]bool {
+	state := gtkcord.FromContext(v.ctx)
+	member := make(map[discord.GuildID]bool)
+
+	for _, g := range state.Ready().Guilds {
+		member[g.ID] = true
+	}
+	if guilds, err := state.Cabinet.Guilds(); err == nil {
+		for _, g := range guilds {
+			member[g.ID] = true
+		}
+	}
+	return member
 }
 
 // AddGuild prepends a single guild into the view.
