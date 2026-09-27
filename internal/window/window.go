@@ -151,10 +151,6 @@ func (w *Window) SwitchToLoginPage() {
 	w.SetTitle("Login")
 }
 
-func (w *Window) SetLoading() {
-	panic("not implemented")
-}
-
 // SetTitle sets the window title.
 func (w *Window) SetTitle(title string) {
 	w.ApplicationWindow.SetTitle(app.FromContext(w.ctx).SuffixedTitle(title))

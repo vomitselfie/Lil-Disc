@@ -1081,9 +1081,11 @@ func (v *View) SendMessage(sendingMsg composer.SendingMessage) {
 
 	me, _ := state.Cabinet.Me()
 	if me == nil {
-		// Risk of leaking Files is too high. Just explode. This realistically
-		// never happens anyway.
-		panic("missing state.Cabinet.Me")
+		// The session is gone or not ready (a logout or reconnect racing the
+		// send). Files are opened lazily further down, so nothing is held
+		// yet; report and drop the send rather than killing the client.
+		app.Error(v.ctx, errors.New("cannot send message: not logged in"))
+		return
 	}
 
 	info := messageInfo{

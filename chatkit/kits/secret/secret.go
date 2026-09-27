@@ -12,6 +12,9 @@ var ErrNotFound = errors.New("key not found")
 type Driver interface {
 	Get(string) ([]byte, error)
 	Set(string, []byte) error
+	// Delete removes the key. Deleting a key that does not exist is not an
+	// error.
+	Delete(string) error
 }
 
 // Service wraps multiple drivers to provide fallbacks.
@@ -65,5 +68,17 @@ func (s Service) Set(k string, v []byte) error {
 		return ErrNotFound
 	}
 
+	return firstErr
+}
+
+// Delete deletes the key from every driver, so a value set through an
+// earlier fallback does not resurface. The first error is returned.
+func (s Service) Delete(k string) error {
+	var firstErr error
+	for _, driver := range s.drivers {
+		if err := driver.Delete(k); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
 	return firstErr
 }

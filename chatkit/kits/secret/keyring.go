@@ -33,7 +33,13 @@ func KeyringDriverForID(id string) *Keyring {
 
 // IsAvailable returns true if the keyring API is available.
 func (k *Keyring) IsAvailable() bool {
-	return keyring.Set(k.id, "__secret_available_000", "") == nil
+	const probe = "__secret_available_000"
+	if keyring.Set(k.id, probe, "") != nil {
+		return false
+	}
+	// The probe used to be left behind in the keyring forever.
+	keyring.Delete(k.id, probe)
+	return true
 }
 
 // Set sets the key.
@@ -51,4 +57,12 @@ func (k *Keyring) Get(key string) ([]byte, error) {
 		return nil, err
 	}
 	return []byte(v), nil
+}
+
+// Delete deletes the key. Deleting a key that does not exist is not an error.
+func (k *Keyring) Delete(key string) error {
+	if err := keyring.Delete(k.id, key); err != nil && !errors.Is(err, keyring.ErrNotFound) {
+		return err
+	}
+	return nil
 }
