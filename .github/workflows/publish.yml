@@ -54,11 +54,16 @@ jobs:
       - name: Update gomod2nix.toml
         run: gomod2nix --outdir nix
 
+      # The Flatpak build is offline, so its Go modules are pinned sources
+      # that must track go.sum exactly as gomod2nix.toml does.
+      - name: Update Flatpak Go sources
+        run: go mod download && python3 packaging/flatpak/gen-go-sources.py
+
       - name: Commit changes
         uses: ./.github/actions/push-or-fail
         with:
           commit-message: Tidy up Go modules
-          file-pattern: nix/gomod2nix.toml go.mod go.sum
+          file-pattern: nix/gomod2nix.toml go.mod go.sum packaging/flatpak/go-sources.json
 
 
   lint:

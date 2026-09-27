@@ -20,3 +20,13 @@ Thumbs.db
 # Claude Code
 .claude/
 CLAUDE.md
+
+# Packaging build output
+/packaging/aur/*/src/
+/packaging/aur/*/pkg/
+/packaging/aur/*/*.pkg.tar.*
+/packaging/aur/*/lildisc/
+/packaging/aur/.test/
+/packaging/flatpak/.flatpak-builder/
+/packaging/flatpak/build-dir/
+/packaging/flatpak/repo/

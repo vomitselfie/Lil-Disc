@@ -1,0 +1,76 @@
+{
+  "id": "io.github.vomitselfie.lildisc",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "49",
+  "sdk": "org.gnome.Sdk",
+  "sdk-extensions": ["org.freedesktop.Sdk.Extension.golang"],
+  "command": "lildisc",
+  "finish-args": [
+    "--share=network",
+    "--share=ipc",
+    "--socket=wayland",
+    "--socket=fallback-x11",
+    "--device=dri",
+    "--socket=pulseaudio",
+    "--talk-name=org.freedesktop.secrets",
+    "--talk-name=org.kde.StatusNotifierWatcher",
+    "--talk-name=org.freedesktop.StatusNotifierWatcher",
+    "--filesystem=xdg-download"
+  ],
+  "cleanup": [
+    "/include",
+    "/lib/pkgconfig",
+    "/share/gir-1.0",
+    "/share/vala"
+  ],
+  "modules": [
+    {
+      "name": "libspelling",
+      "buildsystem": "meson",
+      "config-opts": [
+        "-Ddocs=false",
+        "-Dvapi=false",
+        "-Dintrospection=disabled",
+        "-Dsysprof=false"
+      ],
+      "sources": [
+        {
+          "type": "archive",
+          "url": "https://download.gnome.org/sources/libspelling/0.4/libspelling-0.4.10.tar.xz",
+          "sha256": "56e3f01a3a18b575beea4c34349f99cdaba316e1f7c271b1231f7bcf5d9af73b"
+        }
+      ]
+    },
+    {
+      "name": "lildisc",
+      "buildsystem": "simple",
+      "build-options": {
+        "append-path": "/usr/lib/sdk/golang/bin",
+        "env": {
+          "GOFLAGS": "-mod=mod -modcacherw -trimpath",
+          "GOSUMDB": "off",
+          "GOTOOLCHAIN": "local",
+          "CGO_ENABLED": "1"
+        }
+      },
+      "build-commands": [
+        "GOPROXY=file://$PWD/gomod GOMODCACHE=$PWD/modcache go build -ldflags \"-X main.Version=flatpak\" -o lildisc .",
+        "install -Dm755 lildisc /app/bin/lildisc",
+        "install -Dm644 nix/io.github.vomitselfie.lildisc.desktop /app/share/applications/io.github.vomitselfie.lildisc.desktop",
+        "sed 's|^Exec=.*|Exec=/app/bin/lildisc --gapplication-service|' nix/io.github.vomitselfie.lildisc.service > io.github.vomitselfie.lildisc.service",
+        "install -Dm644 io.github.vomitselfie.lildisc.service /app/share/dbus-1/services/io.github.vomitselfie.lildisc.service",
+        "install -Dm644 io.github.vomitselfie.lildisc.metainfo.xml /app/share/metainfo/io.github.vomitselfie.lildisc.metainfo.xml",
+        "install -Dm644 internal/icons/hicolor/scalable/apps/io.github.vomitselfie.lildisc.svg /app/share/icons/hicolor/scalable/apps/io.github.vomitselfie.lildisc.svg",
+        "install -Dm644 internal/icons/symbolic/apps/io.github.vomitselfie.lildisc-symbolic.svg /app/share/icons/hicolor/symbolic/apps/io.github.vomitselfie.lildisc-symbolic.svg"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": "../..",
+          "skip": ["lildisc", "packaging/aur/.test", ".flatpak-builder", "build-dir", "repo"]
+        },
+        "go-sources.json"
+      ]
+    }
+  ]
+}
