@@ -10,15 +10,15 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"sync"
+	"strings"
 	"time"
 
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app/prefs"
-	"github.com/diamondburned/gotkit/components/onlineimage"
-	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 
+	"github.com/vomitselfie/Lil-Disc/internal/asyncop"
+	"github.com/vomitselfie/Lil-Disc/internal/components/pickergrid"
 	"github.com/vomitselfie/Lil-Disc/internal/discordident"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
@@ -34,29 +34,6 @@ var gifPickerCSS = lilcss.Applier("mod-gif-picker", `
 	.mod-gif-picker {
 		min-width: 380px;
 		min-height: 420px;
-	}
-	.mod-gif-search {
-		margin: {$space_md};
-	}
-	.mod-gif-grid {
-		padding: {$space_xs};
-	}
-	.mod-gif-item {
-		padding: {$space_xs};
-		border-radius: {$radius_md};
-	}
-	.mod-gif-item:hover {
-		background: @lil_hover;
-	}
-	.mod-gif-item .onlineimage {
-		border-radius: {$radius_sm};
-		background: transparent;
-	}
-	.mod-gif-section-header {
-		font-weight: bold;
-		font-size: {$font_micro};
-		color: @lil_text_faint;
-		padding: {$space_md} {$space_md} {$space_xs} {$space_md};
 	}
 `)
 
@@ -116,8 +93,8 @@ func gifQuery(extra url.Values) url.Values {
 	return q
 }
 
-func gifRequest(method, endpoint, token string, body io.Reader) (*http.Response, error) {
-	req, err := http.NewRequest(method, endpoint, body)
+func gifRequest(ctx context.Context, method, endpoint, token string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, body)
 	if err != nil {
 		return nil, err
 	}
@@ -139,8 +116,8 @@ func gifRequest(method, endpoint, token string, body io.Reader) (*http.Response,
 }
 
 // fetchGifs reads a list of GIFs from a Discord /gifs endpoint.
-func fetchGifs(token, path string, query url.Values) ([]gifResult, error) {
-	resp, err := gifRequest("GET", gifAPIBase+path+"?"+query.Encode(), token, nil)
+func fetchGifs(ctx context.Context, token, path string, query url.Values) ([]gifResult, error) {
+	resp, err := gifRequest(ctx, "GET", gifAPIBase+path+"?"+query.Encode(), token, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -161,12 +138,12 @@ func fetchGifs(token, path string, query url.Values) ([]gifResult, error) {
 	return kept, nil
 }
 
-func gifSearch(token, query string) ([]gifResult, error) {
-	return fetchGifs(token, "/search", gifQuery(url.Values{"q": {query}}))
+func gifSearch(ctx context.Context, token, query string) ([]gifResult, error) {
+	return fetchGifs(ctx, token, "/search", gifQuery(url.Values{"q": {query}}))
 }
 
-func gifTrending(token string) ([]gifResult, error) {
-	return fetchGifs(token, "/trending-gifs", gifQuery(nil))
+func gifTrending(ctx context.Context, token string) ([]gifResult, error) {
+	return fetchGifs(ctx, token, "/trending-gifs", gifQuery(nil))
 }
 
 // gifSelected tells Discord which result was picked for which query, as the
@@ -176,7 +153,7 @@ func gifSelected(token string, gif gifResult, query string) {
 		return
 	}
 	body, _ := json.Marshal(map[string]string{"id": gif.ID, "q": query})
-	resp, err := gifRequest("POST", gifAPIBase+"/select", token, bytes.NewReader(body))
+	resp, err := gifRequest(context.Background(), "POST", gifAPIBase+"/select", token, bytes.NewReader(body))
 	if err != nil {
 		slog.Debug("gif select report failed", "err", err)
 		return
@@ -215,149 +192,87 @@ func NewGifPickerPopover(ctx context.Context, onPick func(string)) *gtk.Popover 
 	}
 	token := state.Token()
 
-	search := gtk.NewSearchEntry()
-	search.AddCSSClass("mod-gif-search")
-	search.SetPlaceholderText("Search GIFs...")
-
-	gifBox := gtk.NewBox(gtk.OrientationVertical, 0)
-	gifBox.AddCSSClass("mod-gif-grid")
-
-	scroll := gtk.NewScrolledWindow()
-	scroll.SetPolicy(gtk.PolicyNever, gtk.PolicyAutomatic)
-	scroll.SetChild(gifBox)
-	scroll.SetVExpand(true)
-
-	content := gtk.NewBox(gtk.OrientationVertical, 0)
-	content.Append(search)
-	content.Append(scroll)
-	gifPickerCSS(content)
-
-	popover := gtk.NewPopover()
-	popover.AddCSSClass("mod-gif-picker")
-	popover.SetChild(content)
-	popover.SetSizeRequest(380, 420)
+	grid := pickergrid.New(ctx, pickergrid.Options{
+		Columns:        3,
+		CellSize:       gifPreviewSize,
+		AnimateOnHover: true,
+		Class:          "mod-gif-grid",
+	})
+	search, popover := newPickerPopover(grid, "Search GIFs...", "mod-gif-picker", 380, 420)
+	gifPickerCSS(popover)
 
 	var (
-		searchMu   sync.Mutex
-		searchGen  int
+		latest     asyncop.Latest
 		lastSearch string
+		shownOnce  bool
 	)
 
-	populateResults := func(results []gifResult, query string, gen int) {
-		searchMu.Lock()
-		if gen != searchGen {
-			searchMu.Unlock()
-			return // stale result
-		}
-		searchMu.Unlock()
-
-		clearBox(gifBox)
-
-		if len(results) == 0 {
-			label := gtk.NewLabel("No results")
-			label.AddCSSClass("mod-gif-section-header")
-			gifBox.Append(label)
-			return
-		}
-
-		flow := gtk.NewFlowBox()
-		flow.SetSelectionMode(gtk.SelectionNone)
-		flow.SetMaxChildrenPerLine(3)
-		flow.SetMinChildrenPerLine(2)
-		flow.SetHomogeneous(true)
-
-		for _, gif := range results {
-			gif := gif
-			img := onlineimage.NewPicture(ctx, imgutil.HTTPProvider)
-			img.EnableAnimation().OnHover()
-			img.SetSizeRequest(gifPreviewSize, gifPreviewSize)
-			img.SetContentFit(gtk.ContentFitContain)
-			img.SetURL(gif.thumbnail())
-
-			box := gtk.NewBox(gtk.OrientationVertical, 0)
-			box.AddCSSClass("mod-gif-item")
-			box.Append(img)
-			if gif.Title != "" {
-				box.SetTooltipText(gif.Title)
-			}
-
-			click := gtk.NewGestureClick()
-			click.ConnectReleased(func(n int, x, y float64) {
-				onPick(gif.URL)
-				popover.Popdown()
-				go gifSelected(token, gif, query)
-			})
-			box.AddController(click)
-			flow.Append(box)
-		}
-		gifBox.Append(flow)
-	}
-
 	doSearch := func(query string) {
-		searchMu.Lock()
-		searchGen++
-		gen := searchGen
 		lastSearch = query
-		searchMu.Unlock()
-
-		// Show loading indicator
-		clearBox(gifBox)
-		label := gtk.NewLabel("Loading...")
-		label.AddCSSClass("mod-gif-section-header")
-		gifBox.Append(label)
+		opCtx, gen := latest.Begin(ctx)
+		grid.SetMessage("Loading...")
 
 		go func() {
 			var results []gifResult
 			var err error
-
 			if query == "" {
-				results, err = gifTrending(token)
+				results, err = gifTrending(opCtx, token)
 			} else {
-				results, err = gifSearch(token, query)
+				results, err = gifSearch(opCtx, token, query)
 			}
 
-			if err != nil {
-				slog.Warn("gif search failed", "err", err, "query", query, "provider", gifProvider())
-				glib.IdleAdd(func() {
-					searchMu.Lock()
-					if gen != searchGen {
-						searchMu.Unlock()
-						return
+			glib.IdleAdd(func() {
+				if !latest.IsCurrent(gen) {
+					return
+				}
+				if err != nil {
+					slog.Warn("gif search failed", "err", err, "query", query, "provider", gifProvider())
+					grid.SetMessage("Search failed")
+					return
+				}
+				if len(results) == 0 {
+					grid.SetMessage("No results")
+					return
+				}
+
+				items := make([]pickergrid.Item, len(results))
+				for i, gif := range results {
+					gif := gif
+					items[i] = pickergrid.Item{
+						ImageURL: gif.thumbnail(),
+						Label:    gif.Title,
+						Activate: func() {
+							onPick(gif.URL)
+							go gifSelected(token, gif, query)
+						},
 					}
-					searchMu.Unlock()
-					clearBox(gifBox)
-					errLabel := gtk.NewLabel("Search failed")
-					errLabel.AddCSSClass("mod-gif-section-header")
-					gifBox.Append(errLabel)
-				})
-				return
-			}
-
-			glib.IdleAdd(func() { populateResults(results, query, gen) })
+				}
+				grid.SetSections([]pickergrid.Section{{Items: items}})
+			})
 		}()
 	}
 
-	// Debounce search input
-	var debounceHandle glib.SourceHandle
+	// A network search per keystroke; the debounce keeps it to one per
+	// pause, and Latest cancels the previous request when a new one starts.
+	var debounce glib.SourceHandle
 	search.ConnectSearchChanged(func() {
-		if debounceHandle > 0 {
-			glib.SourceRemove(debounceHandle)
+		if debounce != 0 {
+			glib.SourceRemove(debounce)
 		}
-		debounceHandle = glib.TimeoutAdd(300, func() {
-			debounceHandle = 0
-			doSearch(search.Text())
+		debounce = glib.TimeoutAdd(300, func() {
+			debounce = 0
+			doSearch(strings.TrimSpace(search.Text()))
 		})
 	})
 
-	// Load trending on first show
+	// Load trending the first time the picker opens.
 	popover.ConnectShow(func() {
-		searchMu.Lock()
-		last := lastSearch
-		searchMu.Unlock()
-		if last == "" {
-			doSearch("")
+		if !shownOnce || lastSearch == "" {
+			shownOnce = true
+			doSearch(lastSearch)
 		}
 	})
+	popover.ConnectHide(latest.Cancel)
 
 	return popover
 }

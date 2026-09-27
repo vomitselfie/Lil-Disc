@@ -4,19 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"html"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 
 	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app/prefs"
-	"github.com/diamondburned/gotkit/components/onlineimage"
-	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	unicodeemoji "github.com/enescakir/emoji"
 	"github.com/sahilm/fuzzy"
+	"github.com/vomitselfie/Lil-Disc/internal/components/pickergrid"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
@@ -41,38 +41,9 @@ var emojiPickerCSS = lilcss.Applier("mod-emoji-picker", `
 	.mod-emoji-search {
 		margin: {$space_md};
 	}
-	.mod-emoji-grid {
-		padding: {$space_xs};
-	}
-	.mod-emoji-guild-header {
-		font-weight: bold;
-		font-size: {$font_micro};
-		color: @lil_text_faint;
-		padding: {$space_md} {$space_md} {$space_xs} {$space_md};
-	}
-	.mod-emoji-item {
-		padding: {$space_xs};
-		border-radius: {$radius_md};
-	}
-	.mod-emoji-item:hover {
-		background: @lil_hover;
-	}
-	.mod-emoji-item image,
-	.mod-emoji-item .onlineimage {
-		background: transparent;
-	}
-	.mod-emoji-unicode {
-		font-size: 28px;
-	}
 `)
 
 const emojiPickerSize = 48
-
-// maxEmojiInitialRender caps how many custom emoji are realised on an empty
-// query. A user in many servers can have 5000+ emoji; rendering all of them
-// upfront stalls the GTK main thread. The full set is still reachable by
-// typing — search filters cheaply and only renders matches.
-const maxEmojiInitialRender = 200
 
 // EmojiPickResult contains the result of an emoji selection.
 type EmojiPickResult struct {
@@ -193,104 +164,179 @@ var commonUnicode = []struct {
 
 // --- Shared picker builder ---
 
-func clearBox(box *gtk.Box) {
-	for {
-		child := box.FirstChild()
-		if child == nil {
-			break
-		}
-		box.Remove(child)
-	}
-}
-
-func addSection(box *gtk.Box, title string) {
-	header := gtk.NewLabel(title)
-	header.AddCSSClass("mod-emoji-guild-header")
-	header.SetXAlign(0)
-	box.Append(header)
-}
-
-func newFlow() *gtk.FlowBox {
-	flow := gtk.NewFlowBox()
-	flow.SetSelectionMode(gtk.SelectionNone)
-	flow.SetMaxChildrenPerLine(8)
-	flow.SetMinChildrenPerLine(4)
-	flow.SetHomogeneous(true)
-	return flow
-}
-
-func newUnicodeButton(name, unicode string, onClick func(), popover *gtk.Popover) gtk.Widgetter {
-	label := gtk.NewLabel(unicode)
-	label.AddCSSClass("mod-emoji-unicode")
-
-	box := gtk.NewBox(gtk.OrientationVertical, 0)
-	box.AddCSSClass("mod-emoji-item")
-	box.Append(label)
-	box.SetTooltipText(name)
-
-	click := gtk.NewGestureClick()
-	click.ConnectReleased(func(n int, x, y float64) {
-		onClick()
-		popover.Popdown()
-	})
-	box.AddController(click)
-
-	return box
-}
-
-func newCustomEmojiButton(ctx context.Context, em *discord.Emoji, guildName string, onClick func(), popover *gtk.Popover) gtk.Widgetter {
-	img := onlineimage.NewPicture(ctx, imgutil.HTTPProvider)
-	img.SetSizeRequest(emojiPickerSize, emojiPickerSize)
-	img.SetContentFit(gtk.ContentFitContain)
-	img.SetURL(gtkcord.EmojiURL(em.ID.String(), em.Animated))
-
-	tooltip := html.EscapeString(em.Name)
-	if guildName != "" {
-		tooltip += "\n" + fmt.Sprintf(
-			`<span size="smaller" fgalpha="75%%">%s</span>`,
-			html.EscapeString(guildName),
-		)
-	}
-
-	box := gtk.NewBox(gtk.OrientationVertical, 0)
-	box.AddCSSClass("mod-emoji-item")
-	box.Append(img)
-	box.SetTooltipMarkup(tooltip)
-
-	click := gtk.NewGestureClick()
-	click.ConnectReleased(func(n int, x, y float64) {
-		onClick()
-		popover.Popdown()
-	})
-	box.AddController(click)
-
-	return box
-}
-
-func buildPickerShell() (*gtk.SearchEntry, *gtk.Box, *gtk.Popover) {
+// newPickerPopover wraps a search entry and a grid in a popover. Enter in
+// the entry picks the first result and Down moves into the grid, so a
+// picker can be used without the mouse.
+func newPickerPopover(grid *pickergrid.Grid, placeholder, class string, width, height int) (*gtk.SearchEntry, *gtk.Popover) {
 	search := gtk.NewSearchEntry()
 	search.AddCSSClass("mod-emoji-search")
-	search.SetPlaceholderText("Search emoji...")
-
-	emojiBox := gtk.NewBox(gtk.OrientationVertical, 0)
-	emojiBox.AddCSSClass("mod-emoji-grid")
-
-	scroll := gtk.NewScrolledWindow()
-	scroll.SetPolicy(gtk.PolicyNever, gtk.PolicyAutomatic)
-	scroll.SetChild(emojiBox)
-	scroll.SetVExpand(true)
+	search.SetPlaceholderText(placeholder)
 
 	content := gtk.NewBox(gtk.OrientationVertical, 0)
 	content.Append(search)
-	content.Append(scroll)
+	content.Append(grid)
 	emojiPickerCSS(content)
 
 	popover := gtk.NewPopover()
-	popover.AddCSSClass("mod-emoji-picker")
+	popover.AddCSSClass(class)
 	popover.SetChild(content)
-	popover.SetSizeRequest(340, 400)
+	popover.SetSizeRequest(width, height)
 
-	return search, emojiBox, popover
+	grid.OnActivate(popover.Popdown)
+	search.ConnectActivate(func() { grid.ActivateFirst() })
+	search.ConnectStopSearch(popover.Popdown)
+
+	keys := gtk.NewEventControllerKey()
+	keys.ConnectKeyPressed(func(keyval, _ uint, _ gdk.ModifierType) bool {
+		if keyval == gdk.KEY_Down {
+			return grid.FocusFirst()
+		}
+		return false
+	})
+	search.AddController(keys)
+
+	return search, popover
+}
+
+func newEmojiGrid(ctx context.Context) *pickergrid.Grid {
+	return pickergrid.New(ctx, pickergrid.Options{
+		Columns:  6,
+		CellSize: emojiPickerSize,
+		Class:    "mod-emoji-grid",
+	})
+}
+
+// emojiTarget says where picked emoji go and which are usable there.
+type emojiTarget struct {
+	state    *gtkcord.State
+	guildID  discord.GuildID
+	hasNitro bool
+	// reaction limits custom emoji to the current guild without Nitro,
+	// because a reaction cannot fall back on an image link.
+	reaction bool
+
+	pickCustom  func(em discord.Emoji, emojiGuild discord.GuildID)
+	pickUnicode func(name, unicode string)
+}
+
+func customEmojiItem(em discord.Emoji, guildName string, pick func()) pickergrid.Item {
+	return pickergrid.Item{
+		ImageURL: gtkcord.EmojiURL(em.ID.String(), em.Animated),
+		Label:    ":" + em.Name + ":",
+		Detail:   guildName,
+		Activate: pick,
+	}
+}
+
+func unicodeEmojiItem(name, unicode string, pick func()) pickergrid.Item {
+	return pickergrid.Item{
+		Text:     unicode,
+		Label:    strings.ReplaceAll(name, "_", " "),
+		Activate: pick,
+	}
+}
+
+// emojiSections builds the picker's contents for a query: recents (on an
+// empty query), each guild's emoji, then Unicode emoji.
+func emojiSections(t emojiTarget, query string) []pickergrid.Section {
+	query = strings.ToLower(strings.TrimSpace(query))
+	var sections []pickergrid.Section
+
+	if query == "" {
+		var recent []pickergrid.Item
+		for _, r := range loadRecents() {
+			r := r
+			if r.Unicode != "" {
+				recent = append(recent, unicodeEmojiItem(r.EmojiName, r.Unicode, func() {
+					addRecent(r)
+					t.pickUnicode(r.EmojiName, r.Unicode)
+				}))
+				continue
+			}
+			id := discord.EmojiID(mustSnowflake(r.EmojiID))
+			if t.reaction && !t.hasNitro && !isEmojiInGuild(t.state, t.guildID, id) {
+				continue
+			}
+			em := discord.Emoji{ID: id, Name: r.EmojiName, Animated: r.Animated}
+			recent = append(recent, customEmojiItem(em, "", func() {
+				addRecent(r)
+				t.pickCustom(em, 0)
+			}))
+		}
+		sections = append(sections, pickergrid.Section{Title: "Recent", Items: recent})
+	}
+
+	if guilds, err := t.state.EmojiState.AllEmojis(); err == nil {
+		for _, guild := range guilds {
+			if t.reaction && !t.hasNitro && guild.ID != t.guildID {
+				continue
+			}
+			matched := guild.Emojis
+			if query != "" {
+				matched = filterEmojis(guild.Emojis, query)
+			}
+			items := make([]pickergrid.Item, 0, len(matched))
+			for _, em := range matched {
+				em := em
+				gID := guild.ID
+				items = append(items, customEmojiItem(em, guild.Name, func() {
+					addRecent(recentEntry{EmojiID: em.ID.String(), EmojiName: em.Name, Animated: em.Animated})
+					t.pickCustom(em, gID)
+				}))
+			}
+			sections = append(sections, pickergrid.Section{Title: guild.Name, Items: items})
+		}
+	}
+
+	var unicode []pickergrid.Item
+	for _, e := range unicodeMatches(query) {
+		e := e
+		unicode = append(unicode, unicodeEmojiItem(e.Name, e.Unicode, func() {
+			addRecent(recentEntry{EmojiName: e.Name, Unicode: e.Unicode})
+			t.pickUnicode(e.Name, e.Unicode)
+		}))
+	}
+	sections = append(sections, pickergrid.Section{Title: "Emoji", Items: unicode})
+
+	return sections
+}
+
+type namedUnicode struct{ Name, Unicode string }
+
+// unicodeMatches returns the curated set for an empty query, and otherwise
+// every Unicode emoji whose name contains the query: names starting with it
+// first, then alphabetically. The emoji table is a map, so without sorting
+// the order changed on every keystroke.
+func unicodeMatches(query string) []namedUnicode {
+	if query == "" {
+		out := make([]namedUnicode, len(commonUnicode))
+		for i, e := range commonUnicode {
+			out[i] = namedUnicode{e.Name, e.Unicode}
+		}
+		return out
+	}
+
+	var out []namedUnicode
+	seen := make(map[string]bool)
+	for name, unicode := range unicodeemoji.Map() {
+		name = strings.Trim(strings.ToLower(name), ":")
+		if !strings.Contains(name, query) || seen[unicode] {
+			continue
+		}
+		seen[unicode] = true
+		out = append(out, namedUnicode{name, unicode})
+	}
+	slices.SortFunc(out, func(a, b namedUnicode) int {
+		ap, bp := strings.HasPrefix(a.Name, query), strings.HasPrefix(b.Name, query)
+		if ap != bp {
+			if ap {
+				return -1
+			}
+			return 1
+		}
+		return strings.Compare(a.Name, b.Name)
+	})
+	return out
 }
 
 // --- Message emoji picker ---
@@ -307,115 +353,27 @@ func NewEmojiPickerPopover(ctx context.Context, guildID discord.GuildID, onPick 
 	}
 
 	hasNitro := state.EmojiState.HasNitro()
-	search, emojiBox, popover := buildPickerShell()
-
-	populate := func(query string) {
-		clearBox(emojiBox)
-		recents := loadRecents()
-		query = strings.ToLower(query)
-
-		// Recents section
-		if query == "" && len(recents) > 0 {
-			addSection(emojiBox, "Recent")
-			flow := newFlow()
-			for _, r := range recents {
-				r := r
-				if r.Unicode != "" {
-					flow.Append(newUnicodeButton(r.EmojiName, r.Unicode, func() {
-						addRecent(r)
-						onPick(EmojiPickResult{
-							Text:     r.Unicode,
-							Reaction: discord.APIEmoji(r.Unicode),
-						})
-					}, popover))
-				} else {
-					em := &discord.Emoji{
-						ID:       discord.EmojiID(mustSnowflake(r.EmojiID)),
-						Name:     r.EmojiName,
-						Animated: r.Animated,
-					}
-					flow.Append(newCustomEmojiButton(ctx, em, "", func() {
-						addRecent(r)
-						result := resolveEmojiPick(em, 0, guildID, hasNitro)
-						onPick(result)
-					}, popover))
-				}
-			}
-			emojiBox.Append(flow)
-		}
-
-		// Server emoji
-		guilds, err := state.EmojiState.AllEmojis()
-		if err == nil {
-			rendered := 0
-			truncated := false
-			for _, guild := range guilds {
-				var matched []discord.Emoji
-				if query == "" {
-					matched = guild.Emojis
-					if remaining := maxEmojiInitialRender - rendered; remaining <= 0 {
-						truncated = true
-						break
-					} else if len(matched) > remaining {
-						matched = matched[:remaining]
-						truncated = true
-					}
-				} else {
-					matched = filterEmojis(guild.Emojis, query)
-				}
-				if len(matched) == 0 {
-					continue
-				}
-
-				addSection(emojiBox, guild.Name)
-				flow := newFlow()
-				for _, em := range matched {
-					em := em
-					gName := guild.Name
-					gID := guild.ID
-					flow.Append(newCustomEmojiButton(ctx, &em, gName, func() {
-						addRecent(recentEntry{
-							EmojiID:   em.ID.String(),
-							EmojiName: em.Name,
-							Animated:  em.Animated,
-						})
-						result := resolveEmojiPick(&em, gID, guildID, hasNitro)
-						onPick(result)
-					}, popover))
-				}
-				emojiBox.Append(flow)
-				rendered += len(matched)
-			}
-			if truncated {
-				appendTruncationHint(emojiBox)
-			}
-		}
-
-		// Unicode emoji
-		addUnicodeSection(emojiBox, query, func(name, unicode string) {
-			addRecent(recentEntry{EmojiName: name, Unicode: unicode})
-			onPick(EmojiPickResult{
-				Text:     unicode,
-				Reaction: discord.APIEmoji(unicode),
-			})
-		}, popover)
+	target := emojiTarget{
+		state:    state,
+		guildID:  guildID,
+		hasNitro: hasNitro,
+		pickCustom: func(em discord.Emoji, emojiGuild discord.GuildID) {
+			onPick(resolveEmojiPick(&em, emojiGuild, guildID, hasNitro))
+		},
+		pickUnicode: func(_, unicode string) {
+			onPick(EmojiPickResult{Text: unicode, Reaction: discord.APIEmoji(unicode)})
+		},
 	}
 
-	populate("")
-	search.ConnectSearchChanged(func() { populate(search.Text()) })
+	grid := newEmojiGrid(ctx)
+	search, popover := newPickerPopover(grid, "Search emoji...", "mod-emoji-picker", 340, 400)
+
+	populate := func() { grid.SetSections(emojiSections(target, search.Text())) }
+	search.ConnectSearchChanged(populate)
 	// Refresh recents each time the picker is shown.
-	popover.ConnectShow(func() { populate(search.Text()) })
+	popover.ConnectShow(populate)
 
 	return popover
-}
-
-// appendTruncationHint adds a muted footer label indicating more results are
-// available via search. Used when the empty-query render is capped.
-func appendTruncationHint(box *gtk.Box) {
-	hint := gtk.NewLabel("Type to search for more emoji")
-	hint.AddCSSClass("mod-emoji-guild-header")
-	hint.SetXAlign(0)
-	box.Append(hint)
 }
 
 // --- Reaction emoji picker ---
@@ -431,147 +389,25 @@ func NewReactionPickerPopover(ctx context.Context, guildID discord.GuildID, onPi
 		return nil
 	}
 
-	hasNitro := state.EmojiState.HasNitro()
-	search, emojiBox, popover := buildPickerShell()
-
-	populate := func(query string) {
-		clearBox(emojiBox)
-		recents := loadRecents()
-		query = strings.ToLower(query)
-
-		// Recents section
-		if query == "" && len(recents) > 0 {
-			addSection(emojiBox, "Recent")
-			flow := newFlow()
-			for _, r := range recents {
-				r := r
-				if r.Unicode != "" {
-					flow.Append(newUnicodeButton(r.EmojiName, r.Unicode, func() {
-						addRecent(r)
-						onPick(discord.APIEmoji(r.Unicode))
-					}, popover))
-				} else {
-					// Skip cross-guild custom emoji for non-Nitro
-					if !hasNitro {
-						id := discord.EmojiID(mustSnowflake(r.EmojiID))
-						if !isEmojiInGuild(state, guildID, id) {
-							continue
-						}
-					}
-					em := &discord.Emoji{
-						ID:       discord.EmojiID(mustSnowflake(r.EmojiID)),
-						Name:     r.EmojiName,
-						Animated: r.Animated,
-					}
-					flow.Append(newCustomEmojiButton(ctx, em, "", func() {
-						addRecent(r)
-						onPick(discord.NewAPIEmoji(em.ID, em.Name))
-					}, popover))
-				}
-			}
-			emojiBox.Append(flow)
-		}
-
-		// Server emoji (filtered by guild for non-Nitro)
-		guilds, err := state.EmojiState.AllEmojis()
-		if err == nil {
-			rendered := 0
-			truncated := false
-			for _, guild := range guilds {
-				if !hasNitro && guild.ID != guildID {
-					continue
-				}
-
-				var matched []discord.Emoji
-				if query == "" {
-					matched = guild.Emojis
-					if remaining := maxEmojiInitialRender - rendered; remaining <= 0 {
-						truncated = true
-						break
-					} else if len(matched) > remaining {
-						matched = matched[:remaining]
-						truncated = true
-					}
-				} else {
-					matched = filterEmojis(guild.Emojis, query)
-				}
-				if len(matched) == 0 {
-					continue
-				}
-
-				addSection(emojiBox, guild.Name)
-				flow := newFlow()
-				for _, em := range matched {
-					em := em
-					flow.Append(newCustomEmojiButton(ctx, &em, guild.Name, func() {
-						addRecent(recentEntry{
-							EmojiID:   em.ID.String(),
-							EmojiName: em.Name,
-							Animated:  em.Animated,
-						})
-						onPick(discord.NewAPIEmoji(em.ID, em.Name))
-					}, popover))
-				}
-				emojiBox.Append(flow)
-				rendered += len(matched)
-			}
-			if truncated {
-				appendTruncationHint(emojiBox)
-			}
-		}
-
-		// Unicode emoji (always available for reactions)
-		addUnicodeSection(emojiBox, query, func(name, unicode string) {
-			addRecent(recentEntry{EmojiName: name, Unicode: unicode})
-			onPick(discord.APIEmoji(unicode))
-		}, popover)
+	target := emojiTarget{
+		state:    state,
+		guildID:  guildID,
+		hasNitro: state.EmojiState.HasNitro(),
+		reaction: true,
+		pickCustom: func(em discord.Emoji, _ discord.GuildID) {
+			onPick(discord.NewAPIEmoji(em.ID, em.Name))
+		},
+		pickUnicode: func(_, unicode string) { onPick(discord.APIEmoji(unicode)) },
 	}
 
-	populate("")
-	search.ConnectSearchChanged(func() { populate(search.Text()) })
-	popover.ConnectShow(func() { populate(search.Text()) })
+	grid := newEmojiGrid(ctx)
+	search, popover := newPickerPopover(grid, "Search emoji...", "mod-emoji-picker", 340, 400)
+
+	populate := func() { grid.SetSections(emojiSections(target, search.Text())) }
+	search.ConnectSearchChanged(populate)
+	popover.ConnectShow(populate)
 
 	return popover
-}
-
-// --- Unicode emoji section ---
-
-func addUnicodeSection(box *gtk.Box, query string, onPick func(name, unicode string), popover *gtk.Popover) {
-	if query == "" {
-		// Show curated common set
-		addSection(box, "Emoji")
-		flow := newFlow()
-		for _, e := range commonUnicode {
-			e := e
-			flow.Append(newUnicodeButton(e.Name, e.Unicode, func() {
-				onPick(e.Name, e.Unicode)
-			}, popover))
-		}
-		box.Append(flow)
-	} else {
-		// Search full Unicode emoji set
-		allEmoji := unicodeemoji.Map()
-		var matches []struct{ name, unicode string }
-		for name, unicode := range allEmoji {
-			if strings.Contains(strings.ToLower(name), query) {
-				matches = append(matches, struct{ name, unicode string }{name, unicode})
-			}
-			if len(matches) >= 50 {
-				break // cap results
-			}
-		}
-		if len(matches) > 0 {
-			addSection(box, "Emoji")
-			flow := newFlow()
-			for _, m := range matches {
-				m := m
-				flow.Append(newUnicodeButton(m.name, m.unicode, func() {
-					onPick(m.name, m.unicode)
-				}, popover))
-			}
-			box.Append(flow)
-		}
-	}
 }
 
 // --- Helpers ---

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"html"
 	"io"
 	"log/slog"
 	"net/http"
@@ -12,13 +11,14 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app/prefs"
-	"github.com/diamondburned/gotkit/components/onlineimage"
-	"github.com/diamondburned/gotkit/gtkutil/imgutil"
+	"github.com/vomitselfie/Lil-Disc/internal/asyncop"
+	"github.com/vomitselfie/Lil-Disc/internal/components/pickergrid"
 	"github.com/vomitselfie/Lil-Disc/internal/discordident"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
@@ -35,31 +35,16 @@ var stickerPickerCSS = lilcss.Applier("mod-sticker-picker", `
 		min-width: 380px;
 		min-height: 420px;
 	}
-	.mod-sticker-search {
-		margin: {$space_md};
-	}
-	.mod-sticker-grid {
-		padding: {$space_xs};
-	}
-	.mod-sticker-item {
-		padding: {$space_xs};
-		border-radius: {$radius_md};
-	}
-	.mod-sticker-item:hover {
-		background: @lil_hover;
-	}
-	.mod-sticker-item .onlineimage {
-		background: transparent;
-	}
-	.mod-sticker-guild-header {
-		font-weight: bold;
-		font-size: {$font_micro};
-		color: @lil_text_faint;
-		padding: {$space_md} {$space_md} {$space_xs} {$space_md};
-	}
 `)
 
 const stickerPickerSize = 72
+
+// How long sticker lists are trusted from the disk cache. Discord's own packs
+// change rarely; a server's stickers change whenever its admins like.
+const (
+	guildStickerCacheAge = 24 * time.Hour
+	stickerPackCacheAge  = 7 * 24 * time.Hour
+)
 
 // StickerPickResult contains the result of a sticker selection.
 type StickerPickResult struct {
@@ -112,10 +97,13 @@ func fetchGuildStickers(token string, guildID discord.GuildID) ([]guildSticker, 
 	}
 	stickerCacheMu.Unlock()
 
-	// Try disk cache first (no expiry — only refreshed manually).
+	// Try disk cache first. It used to never expire, and nothing refreshed
+	// it: arikawa does not model GUILD_STICKERS_UPDATE, so there is no event
+	// to invalidate on, and a server's new stickers never appeared. A day's
+	// age bounds how stale it can get.
 	cacheFile := fmt.Sprintf("stickers_%s.json", guildID)
 	var stickers []guildSticker
-	if loadCachedJSON(cacheFile, 0, &stickers) {
+	if loadCachedJSON(cacheFile, guildStickerCacheAge, &stickers) {
 		stickerCacheMu.Lock()
 		stickerCache[guildID] = stickers
 		stickerCacheMu.Unlock()
@@ -123,7 +111,7 @@ func fetchGuildStickers(token string, guildID discord.GuildID) ([]guildSticker, 
 	}
 
 	// Fetch from API.
-	url := fmt.Sprintf("https://discord.com/api/v10/guilds/%s/stickers", guildID)
+	url := fmt.Sprintf("https://discord.com/api/v9/guilds/%s/stickers", guildID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -180,7 +168,7 @@ func SendSticker(token string, channelID discord.ChannelID, stickerID discord.St
 		return err
 	}
 
-	url := fmt.Sprintf("https://discord.com/api/v10/channels/%s/messages", channelID)
+	url := fmt.Sprintf("https://discord.com/api/v9/channels/%s/messages", channelID)
 	req, err := http.NewRequest("POST", url, strings.NewReader(string(body)))
 	if err != nil {
 		return err
@@ -229,7 +217,7 @@ func fetchDefaultStickerPacks(token string) []defaultStickerPack {
 
 	// Try disk cache first.
 	var packs []defaultStickerPack
-	if loadCachedJSON("default_sticker_packs.json", 0, &packs) {
+	if loadCachedJSON("default_sticker_packs.json", stickerPackCacheAge, &packs) {
 		defaultPacksMu.Lock()
 		defaultPacksCache = packs
 		defaultPacksMu.Unlock()
@@ -237,7 +225,7 @@ func fetchDefaultStickerPacks(token string) []defaultStickerPack {
 	}
 
 	// Fetch from API.
-	req, err := http.NewRequest("GET", "https://discord.com/api/v10/sticker-packs", nil)
+	req, err := http.NewRequest("GET", "https://discord.com/api/v9/sticker-packs", nil)
 	if err != nil {
 		return nil
 	}
@@ -267,8 +255,83 @@ func fetchDefaultStickerPacks(token string) []defaultStickerPack {
 	return data.Packs
 }
 
+// stickerSection is one guild's or pack's stickers.
+type stickerSection struct {
+	name     string
+	stickers []guildSticker
+}
+
+// loadStickerCatalog fetches every sticker section the account can use here.
+// Guild stickers come from the disk cache when warm; cold guilds are fetched
+// with bounded concurrency, because a hundred sequential round trips would
+// hold the picker for seconds.
+func loadStickerCatalog(ctx context.Context, state *gtkcord.State, guildID discord.GuildID) []stickerSection {
+	token := state.Token()
+
+	var guildIDs []discord.GuildID
+	if state.EmojiState.HasNitro() {
+		if guilds, err := state.Cabinet.Guilds(); err == nil {
+			for _, g := range guilds {
+				guildIDs = append(guildIDs, g.ID)
+			}
+		}
+	} else if guildID.IsValid() {
+		// Without Nitro only the current guild's stickers can be sent.
+		guildIDs = []discord.GuildID{guildID}
+	}
+
+	guildNames := make(map[discord.GuildID]string)
+	if guilds, err := state.Cabinet.Guilds(); err == nil {
+		for _, g := range guilds {
+			guildNames[g.ID] = g.Name
+		}
+	}
+
+	perGuild := make([]stickerSection, len(guildIDs))
+	sem := make(chan struct{}, 5)
+	var wg sync.WaitGroup
+	for i, gID := range guildIDs {
+		if ctx.Err() != nil {
+			break
+		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(i int, gID discord.GuildID) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			stickers, err := fetchGuildStickers(token, gID)
+			if err != nil {
+				slog.Debug("failed to fetch stickers", "guild", gID, "err", err)
+				return
+			}
+			name := guildNames[gID]
+			if name == "" {
+				name = gID.String()
+			}
+			perGuild[i] = stickerSection{name: name, stickers: stickers}
+		}(i, gID)
+	}
+	wg.Wait()
+
+	var sections []stickerSection
+	for _, sec := range perGuild {
+		if sec.name != "" {
+			sections = append(sections, sec)
+		}
+	}
+	// Default sticker packs are always available.
+	for _, pack := range fetchDefaultStickerPacks(token) {
+		sections = append(sections, stickerSection{name: pack.Name, stickers: pack.Stickers})
+	}
+	return sections
+}
+
 // NewStickerPickerPopover creates a sticker picker popover for the composer.
 // guildID is the current guild context — non-Nitro users only see that guild's stickers.
+//
+// The catalog is loaded once each time the picker opens and then filtered
+// locally as you type. It used to refetch everything per keystroke, with
+// nothing to stop an older, slower fetch overwriting a newer one's results.
 func NewStickerPickerPopover(ctx context.Context, guildID discord.GuildID, onPick func(StickerPickResult)) *gtk.Popover {
 	if !enableStickerPicker.Value() {
 		return nil
@@ -279,192 +342,84 @@ func NewStickerPickerPopover(ctx context.Context, guildID discord.GuildID, onPic
 		return nil
 	}
 
-	search := gtk.NewSearchEntry()
-	search.AddCSSClass("mod-sticker-search")
-	search.SetPlaceholderText("Search stickers...")
+	grid := pickergrid.New(ctx, pickergrid.Options{
+		Columns:  4,
+		CellSize: stickerPickerSize,
+		Class:    "mod-sticker-grid",
+	})
+	search, popover := newPickerPopover(grid, "Search stickers...", "mod-sticker-picker", 380, 420)
+	stickerPickerCSS(popover)
 
-	stickerBox := gtk.NewBox(gtk.OrientationVertical, 0)
-	stickerBox.AddCSSClass("mod-sticker-grid")
+	var (
+		catalog []stickerSection
+		loaded  bool
+		latest  asyncop.Latest
+	)
 
-	scroll := gtk.NewScrolledWindow()
-	scroll.SetPolicy(gtk.PolicyNever, gtk.PolicyAutomatic)
-	scroll.SetChild(stickerBox)
-	scroll.SetVExpand(true)
-
-	content := gtk.NewBox(gtk.OrientationVertical, 0)
-	content.Append(search)
-	content.Append(scroll)
-	stickerPickerCSS(content)
-
-	popover := gtk.NewPopover()
-	popover.AddCSSClass("mod-sticker-picker")
-	popover.SetChild(content)
-	popover.SetSizeRequest(380, 420)
-
-	addStickerFlow := func(stickers []guildSticker) *gtk.FlowBox {
-		flow := gtk.NewFlowBox()
-		flow.SetSelectionMode(gtk.SelectionNone)
-		flow.SetMaxChildrenPerLine(4)
-		flow.SetMinChildrenPerLine(3)
-		flow.SetHomogeneous(true)
-
-		for _, s := range stickers {
-			s := s
-			// Skip Lottie stickers — no renderer available.
-			if s.FormatType == 3 {
-				continue
-			}
-
-			img := onlineimage.NewPicture(ctx, imgutil.HTTPProvider)
-			img.SetSizeRequest(stickerPickerSize, stickerPickerSize)
-			img.SetContentFit(gtk.ContentFitContain)
-			img.SetURL(s.staticURL())
-
-			tooltip := html.EscapeString(s.Name)
-			if s.Tags != "" {
-				tooltip += "\n" + fmt.Sprintf(
-					`<span size="smaller" fgalpha="75%%">%s</span>`,
-					html.EscapeString(s.Tags),
-				)
-			}
-
-			box := gtk.NewBox(gtk.OrientationVertical, 0)
-			box.AddCSSClass("mod-sticker-item")
-			box.Append(img)
-			box.SetTooltipMarkup(tooltip)
-
-			click := gtk.NewGestureClick()
-			click.ConnectReleased(func(n int, x, y float64) {
-				onPick(StickerPickResult{
-					StickerID: s.ID,
-					Name:      s.Name,
-				})
-				popover.Popdown()
-			})
-			box.AddController(click)
-			flow.Append(box)
+	render := func() {
+		if !loaded {
+			return
 		}
-		return flow
-	}
+		query := strings.ToLower(strings.TrimSpace(search.Text()))
 
-	populate := func(query string) {
-		clearBox(stickerBox)
-		query = strings.ToLower(query)
-
-		hasNitro := state.EmojiState.HasNitro()
-		token := state.Token()
-
-		// Determine which guilds to show stickers for.
-		var guildIDs []discord.GuildID
-		if hasNitro {
-			// Nitro: show all guilds.
-			guilds, err := state.Cabinet.Guilds()
-			if err == nil {
-				for _, g := range guilds {
-					guildIDs = append(guildIDs, g.ID)
-				}
+		var sections []pickergrid.Section
+		for _, sec := range catalog {
+			stickers := sec.stickers
+			if query != "" {
+				stickers = filterStickers(stickers, query)
 			}
-		} else if guildID.IsValid() {
-			// Non-Nitro: only current guild's stickers.
-			guildIDs = []discord.GuildID{guildID}
-		}
-
-		loading := gtk.NewLabel("Loading stickers...")
-		loading.AddCSSClass("mod-sticker-guild-header")
-		stickerBox.Append(loading)
-
-		go func() {
-			type stickerSection struct {
-				name     string
-				stickers []guildSticker
-			}
-
-			var sections []stickerSection
-
-			// Guild stickers.
-			guilds, _ := state.Cabinet.Guilds()
-			guildNames := make(map[discord.GuildID]string, len(guilds))
-			for _, g := range guilds {
-				guildNames[g.ID] = g.Name
-			}
-
-			// Fetch in parallel with bounded concurrency. The disk cache makes
-			// warm fetches instant; the slow path is the first cold open with
-			// many guilds, where 100 sequential RTTs would block the picker
-			// for seconds.
-			perGuild := make([]stickerSection, len(guildIDs))
-			sem := make(chan struct{}, 5)
-			var wg sync.WaitGroup
-			for i, gID := range guildIDs {
-				wg.Add(1)
-				sem <- struct{}{}
-				go func(i int, gID discord.GuildID) {
-					defer wg.Done()
-					defer func() { <-sem }()
-					stickers, err := fetchGuildStickers(token, gID)
-					if err != nil {
-						slog.Debug("failed to fetch stickers",
-							"guild", gID, "err", err)
-						return
-					}
-					if query != "" {
-						stickers = filterStickers(stickers, query)
-					}
-					if len(stickers) == 0 {
-						return
-					}
-					name := guildNames[gID]
-					if name == "" {
-						name = gID.String()
-					}
-					perGuild[i] = stickerSection{name: name, stickers: stickers}
-				}(i, gID)
-			}
-			wg.Wait()
-			for _, sec := range perGuild {
-				if sec.name != "" {
-					sections = append(sections, sec)
-				}
-			}
-
-			// Default sticker packs (always available).
-			packs := fetchDefaultStickerPacks(token)
-			for _, pack := range packs {
-				stickers := pack.Stickers
-				if query != "" {
-					stickers = filterStickers(stickers, query)
-				}
-				if len(stickers) == 0 {
+			items := make([]pickergrid.Item, 0, len(stickers))
+			for _, st := range stickers {
+				st := st
+				// Lottie stickers have no renderer here.
+				if st.FormatType == 3 {
 					continue
 				}
-				sections = append(sections, stickerSection{name: pack.Name, stickers: stickers})
+				items = append(items, pickergrid.Item{
+					ImageURL: st.staticURL(),
+					Label:    st.Name,
+					Detail:   st.Tags,
+					Activate: func() { onPick(StickerPickResult{StickerID: st.ID, Name: st.Name}) },
+				})
 			}
+			sections = append(sections, pickergrid.Section{Title: sec.name, Items: items})
+		}
 
-			glib.IdleAdd(func() {
-				clearBox(stickerBox)
-
-				if len(sections) == 0 {
-					label := gtk.NewLabel("No stickers found")
-					label.AddCSSClass("mod-sticker-guild-header")
-					stickerBox.Append(label)
-					return
-				}
-
-				for _, sec := range sections {
-					header := gtk.NewLabel(sec.name)
-					header.AddCSSClass("mod-sticker-guild-header")
-					header.SetXAlign(0)
-					stickerBox.Append(header)
-					stickerBox.Append(addStickerFlow(sec.stickers))
-				}
-			})
-		}()
+		if hasItems(sections) {
+			grid.SetSections(sections)
+		} else {
+			grid.SetMessage("No stickers found")
+		}
 	}
 
-	search.ConnectSearchChanged(func() { populate(search.Text()) })
-	popover.ConnectShow(func() { populate(search.Text()) })
+	popover.ConnectShow(func() {
+		opCtx, gen := latest.Begin(ctx)
+		loaded = false
+		grid.SetMessage("Loading stickers...")
+		go func() {
+			sections := loadStickerCatalog(opCtx, state, guildID)
+			glib.IdleAdd(func() {
+				if !latest.IsCurrent(gen) {
+					return
+				}
+				catalog, loaded = sections, true
+				render()
+			})
+		}()
+	})
+	popover.ConnectHide(latest.Cancel)
+	search.ConnectSearchChanged(render)
 
 	return popover
+}
+
+func hasItems(sections []pickergrid.Section) bool {
+	for _, sec := range sections {
+		if len(sec.Items) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func filterStickers(stickers []guildSticker, query string) []guildSticker {
