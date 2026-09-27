@@ -12,8 +12,8 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/app/locale"
-	"github.com/dijama/lildisc/internal/gtkcord"
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 const typerTimeout = 10 * time.Second

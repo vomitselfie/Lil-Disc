@@ -15,8 +15,8 @@ import (
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/diamondburned/ningen/v3/states/emoji"
 	"github.com/sahilm/fuzzy"
-	"github.com/dijama/lildisc/internal/gtkcord"
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 
 	unicodeemoji "github.com/enescakir/emoji"
 )

@@ -9,15 +9,23 @@
 set -eu
 
 repo=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-appid=io.github.dijama.lildisc
+appid=io.github.vomitselfie.lildisc
 
 bin=${XDG_BIN_HOME:-$HOME/.local/bin}/lildisc
 desktop=${XDG_DATA_HOME:-$HOME/.local/share}/applications/$appid.desktop
 service=${XDG_DATA_HOME:-$HOME/.local/share}/dbus-1/services/$appid.service
 icon=${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/scalable/apps/$appid.svg
 
+# Files installed under the app ID LilDisc used before it moved to
+# vomitselfie. Removed on install and uninstall, so the launcher does not
+# show two entries and D-Bus does not activate the old service name.
+oldid=io.github.dijama.lildisc
+old="${XDG_DATA_HOME:-$HOME/.local/share}/applications/$oldid.desktop
+${XDG_DATA_HOME:-$HOME/.local/share}/dbus-1/services/$oldid.service
+${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/scalable/apps/$oldid.svg"
+
 if [ "${1:-}" = "--uninstall" ]; then
-	rm -fv "$bin" "$desktop" "$service" "$icon"
+	rm -fv "$bin" "$desktop" "$service" "$icon" $old
 	update-desktop-database "$(dirname "$desktop")" 2>/dev/null || true
 	exit 0
 fi
@@ -32,6 +40,9 @@ for d in "$bin" "$desktop" "$service" "$icon"; do
 done
 
 ln -sfn "$repo/lildisc" "$bin"
+
+# shellcheck disable=SC2086 # $old is a newline-separated list of paths
+rm -f $old
 
 # Exec must be absolute: launchers don't necessarily inherit a PATH
 # containing ~/.local/bin.

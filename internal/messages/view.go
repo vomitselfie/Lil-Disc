@@ -24,11 +24,11 @@ import (
 	"github.com/diamondburned/gotkit/components/autoscroll"
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/pkg/errors"
-	"github.com/dijama/lildisc/internal/components/hoverpopover"
-	"github.com/dijama/lildisc/internal/gtkcord"
-	"github.com/dijama/lildisc/internal/lilcss"
-	"github.com/dijama/lildisc/internal/messages/composer"
-	"github.com/dijama/lildisc/internal/mods"
+	"github.com/vomitselfie/Lil-Disc/internal/components/hoverpopover"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/messages/composer"
+	"github.com/vomitselfie/Lil-Disc/internal/mods"
 )
 
 type messageRow struct {

@@ -1,3 +1,3 @@
 [D-BUS Service]
-Name=io.github.dijama.lildisc
+Name=io.github.vomitselfie.lildisc
 Exec=/usr/bin/lildisc --gapplication-service

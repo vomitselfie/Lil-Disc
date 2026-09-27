@@ -11,8 +11,8 @@ import (
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotkit/app/notify"
 	"github.com/diamondburned/ningen/v3"
-	"github.com/dijama/lildisc/internal/gtkcord"
-	"github.com/dijama/lildisc/internal/mods"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/mods"
 )
 
 type loginWindow struct {

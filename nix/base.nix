@@ -26,12 +26,12 @@
 
 	files = {
 		desktop = {
-			name = "io.github.dijama.lildisc.desktop";
-			path = ./io.github.dijama.lildisc.desktop;
+			name = "io.github.vomitselfie.lildisc.desktop";
+			path = ./io.github.vomitselfie.lildisc.desktop;
 		};
 		service = {
-			name = "io.github.dijama.lildisc.service";
-			path = ./io.github.dijama.lildisc.service;
+			name = "io.github.vomitselfie.lildisc.service";
+			path = ./io.github.vomitselfie.lildisc.service;
 		};
 		icons = {
 			path = pkgs.linkFarm "lildisc-icons" (map

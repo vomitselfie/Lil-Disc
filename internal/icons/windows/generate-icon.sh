@@ -18,9 +18,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
 pngInput="./lildisc_logo.png"
-svgInput="./hicolor/scalable/apps/io.github.dijama.lildisc.svg"
+svgInput="./hicolor/scalable/apps/io.github.vomitselfie.lildisc.svg"
 icoOutput="./windows/lildisc.ico"
-hashFile="./windows/io.github.dijama.lildisc.svg.sha256"
+hashFile="./windows/io.github.vomitselfie.lildisc.svg.sha256"
 
 # Hash the primary source of truth so we only regenerate on real changes.
 if [[ -f "$pngInput" ]]; then

@@ -82,7 +82,7 @@ const (
 
 // legacyUserAgent is what LilDisc sent before this package existed. It is
 // kept for LILDISC_CLIENT_IDENTITY=off, which is the honest-but-flagged mode.
-const legacyUserAgent = "LilDisc (https://github.com/dijama/lildisc)"
+const legacyUserAgent = "LilDisc (https://github.com/vomitselfie/Lil-Disc)"
 
 // superProperties is the payload of the X-Super-Properties header, and also
 // the gateway IDENTIFY properties. Field order matches the official client's

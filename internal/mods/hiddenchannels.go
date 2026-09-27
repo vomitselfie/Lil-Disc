@@ -5,8 +5,8 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/gotkit/app/prefs"
-	"github.com/dijama/lildisc/internal/gtkcord"
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 var enableHiddenChannels = prefs.NewBool(false, prefs.PropMeta{

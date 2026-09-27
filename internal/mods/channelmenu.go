@@ -8,7 +8,7 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 )
 
 // AttachChannelContextMenu adds a right-click context menu to a channel

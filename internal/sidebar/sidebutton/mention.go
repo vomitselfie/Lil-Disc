@@ -5,7 +5,7 @@ import (
 
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 // MentionsIndicator is a small indicator that shows the mention count.

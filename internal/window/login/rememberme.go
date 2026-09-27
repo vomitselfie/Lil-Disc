@@ -7,7 +7,7 @@ import (
 	"github.com/diamondburned/chatkit/kits/secret"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 type rememberMeBox struct {

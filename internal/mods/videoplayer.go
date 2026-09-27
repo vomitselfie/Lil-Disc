@@ -15,7 +15,7 @@ import (
 	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/app/prefs"
 
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 var enableMpv = prefs.NewBool(true, prefs.PropMeta{

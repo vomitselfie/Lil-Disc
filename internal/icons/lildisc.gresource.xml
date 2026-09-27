@@ -1,10 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <gresources>
-  <gresource prefix="/io/github/dijama/lildisc/icons/scalable/actions/">
-    <file preprocess="xml-stripblanks" alias="logo.svg">hicolor/scalable/apps/io.github.dijama.lildisc.svg</file>
-    <file preprocess="xml-stripblanks" alias="logo-nightly.svg">hicolor/scalable/apps/io.github.dijama.lildisc.Devel.svg</file>
+  <gresource prefix="/io/github/vomitselfie/lildisc/icons/scalable/actions/">
+    <file preprocess="xml-stripblanks" alias="logo.svg">hicolor/scalable/apps/io.github.vomitselfie.lildisc.svg</file>
+    <file preprocess="xml-stripblanks" alias="logo-nightly.svg">hicolor/scalable/apps/io.github.vomitselfie.lildisc.Devel.svg</file>
   </gresource>
-  <gresource prefix="/io/github/dijama/lildisc/icons/scalable/actions/">
+  <gresource prefix="/io/github/vomitselfie/lildisc/icons/scalable/actions/">
     <file preprocess="xml-stripblanks" alias="avatar-default-symbolic.svg">scalable/actions/avatar-default-symbolic.svg</file>
     <file preprocess="xml-stripblanks" alias="channel-broadcast-symbolic.svg">scalable/actions/channel-broadcast-symbolic.svg</file>
     <file preprocess="xml-stripblanks" alias="channel-symbolic.svg">scalable/actions/channel-symbolic.svg</file>

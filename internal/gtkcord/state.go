@@ -33,9 +33,9 @@ import (
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/diamondburned/ningen/v3"
 	"github.com/diamondburned/ningen/v3/discordmd"
-	"github.com/dijama/lildisc/internal/colorhash"
-	"github.com/dijama/lildisc/internal/discordident"
-	"github.com/dijama/lildisc/internal/signaling"
+	"github.com/vomitselfie/Lil-Disc/internal/colorhash"
+	"github.com/vomitselfie/Lil-Disc/internal/discordident"
+	"github.com/vomitselfie/Lil-Disc/internal/signaling"
 
 	coreglib "github.com/diamondburned/gotk4/pkg/core/glib"
 )

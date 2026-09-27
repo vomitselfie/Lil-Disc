@@ -19,9 +19,9 @@ import (
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/diamondburned/gotkit/components/onlineimage"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
-	"github.com/dijama/lildisc/internal/discordident"
-	"github.com/dijama/lildisc/internal/gtkcord"
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/discordident"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 var enableStickerPicker = prefs.NewBool(true, prefs.PropMeta{

@@ -10,7 +10,7 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app/prefs"
 
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 // LilDisc ships its own light and dark palettes rather than deriving colours

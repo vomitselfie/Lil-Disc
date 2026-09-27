@@ -9,9 +9,9 @@
     <ROW Property="ALLUSERS" Value="1"/>
     <ROW Property="ARPNOMODIFY" MultiBuildValue="DefaultBuild:1"/>
     <ROW Property="ARPNOREPAIR" Value="1" MultiBuildValue="DefaultBuild:1"/>
-    <ROW Property="ARPURLINFOABOUT" Value="https://github.com/dijama/lildisc"/>
+    <ROW Property="ARPURLINFOABOUT" Value="https://github.com/vomitselfie/Lil-Disc"/>
     <ROW Property="IAgree" Value="No" Type="4"/>
-    <ROW Property="Manufacturer" Value="dijama"/>
+    <ROW Property="Manufacturer" Value="Vomitselfie"/>
     <ROW Property="ProductCode" Value="1033:{20D43FC8-2A29-4FDE-958D-8196BC244711} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="LilDisc"/>

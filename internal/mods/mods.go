@@ -6,7 +6,7 @@ import (
 
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
-	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 )
 
 // ActionWidget is a widget that can also have actions and shortcuts attached.

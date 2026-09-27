@@ -9,9 +9,9 @@ import (
 	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
-	"github.com/dijama/lildisc/internal/gtkcord"
-	"github.com/dijama/lildisc/internal/mods"
-	"github.com/dijama/lildisc/internal/signaling"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/mods"
+	"github.com/vomitselfie/Lil-Disc/internal/signaling"
 )
 
 type modelManager struct {

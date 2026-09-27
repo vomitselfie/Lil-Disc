@@ -17,8 +17,8 @@ import (
 	"github.com/diamondburned/gotkit/app/locale"
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/dijama/lildisc/internal/gtkcord"
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 var enableSearch = prefs.NewBool(true, prefs.PropMeta{

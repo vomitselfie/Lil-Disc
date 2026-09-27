@@ -18,7 +18,7 @@ import (
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
-	"github.com/dijama/lildisc/internal/icons"
+	"github.com/vomitselfie/Lil-Disc/internal/icons"
 )
 
 // sniIconPixmap is the SNI-spec shape for an icon: a slice of (width,
@@ -340,7 +340,7 @@ func sniProperties() map[string]dbus.Variant {
 		"Status":   dbus.MakeVariant("Active"),
 		// IconName is the themed fallback if the host ignores IconPixmap.
 		// It's our app id so it matches the installed hicolor icon.
-		"IconName":      dbus.MakeVariant("io.github.dijama.lildisc"),
+		"IconName":      dbus.MakeVariant("io.github.vomitselfie.lildisc"),
 		"IconThemePath": dbus.MakeVariant(""),
 		"ItemIsMenu":    dbus.MakeVariant(false),
 		"WindowId":      dbus.MakeVariant(int32(0)),

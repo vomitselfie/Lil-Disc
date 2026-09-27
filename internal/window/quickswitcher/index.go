@@ -8,7 +8,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/gotkit/app"
 	"github.com/sahilm/fuzzy"
-	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 )
 
 type index struct {

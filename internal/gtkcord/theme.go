@@ -3,7 +3,7 @@ package gtkcord
 import (
 	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 // This file holds LilDisc's design tokens. Widget stylesheets are expected to

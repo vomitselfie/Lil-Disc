@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/diamondburned/gotkit/app/prefs"
-	"github.com/dijama/lildisc/internal/signaling"
+	"github.com/vomitselfie/Lil-Disc/internal/signaling"
 )
 
 var enableAvatarCacheBust = prefs.NewBool(true, prefs.PropMeta{

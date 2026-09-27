@@ -7,7 +7,7 @@ import (
 	"github.com/diamondburned/chatkit/components/embed"
 	"github.com/diamondburned/gotkit/app/prefs"
 
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 // mod: embeds — override chatkit's black background on embed images.

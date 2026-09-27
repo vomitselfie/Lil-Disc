@@ -13,11 +13,11 @@ import (
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/pkg/errors"
 	"libdb.so/ctxt"
-	"github.com/dijama/lildisc/internal/gtkcord"
-	"github.com/dijama/lildisc/internal/lilcss"
-	"github.com/dijama/lildisc/internal/mods"
-	"github.com/dijama/lildisc/internal/window/login"
-	"github.com/dijama/lildisc/internal/window/quickswitcher"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/mods"
+	"github.com/vomitselfie/Lil-Disc/internal/window/login"
+	"github.com/vomitselfie/Lil-Disc/internal/window/quickswitcher"
 )
 
 var useDiscordColorScheme = prefs.NewBool(true, prefs.PropMeta{

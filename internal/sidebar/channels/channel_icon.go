@@ -6,7 +6,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 var channelIndicatorCSS = lilcss.Applier("channel-item-indicator", `

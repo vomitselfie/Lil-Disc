@@ -9,8 +9,8 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/pkg/errors"
-	"github.com/dijama/lildisc/internal/gtkcord"
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 // LoginController is the parent controller that Page controls.
@@ -63,9 +63,47 @@ func NewPage(ctx context.Context, ctrl LoginController) *Page {
 	return &p
 }
 
+// legacyKeyringID is where the token was saved before the app ID changed from
+// io.github.dijama.lildisc. The keyring entry is keyed on the app ID, so
+// without this every existing install would come up logged out.
+const legacyKeyringID = "io.github.dijama.lildisc.secrets"
+
 // LoadKeyring loads the session from the keyring.
 func (p *Page) LoadKeyring() {
-	p.asyncLoadFromSecrets(secret.KeyringDriver(p.ctx))
+	p.asyncLoadFromSecrets(migratingKeyring{
+		Driver: secret.KeyringDriver(p.ctx),
+		legacy: secret.KeyringDriverForID(legacyKeyringID),
+	})
+}
+
+// migratingKeyring reads from the legacy keyring entry when the current one
+// is empty, and copies what it finds forward. The legacy entry is left in
+// place, so a downgrade still finds its token.
+type migratingKeyring struct {
+	secret.Driver
+	legacy secret.Driver
+}
+
+func (k migratingKeyring) Get(key string) ([]byte, error) {
+	b, err := k.Driver.Get(key)
+	if !errors.Is(err, secret.ErrNotFound) {
+		return b, err
+	}
+
+	b, legacyErr := k.legacy.Get(key)
+	if legacyErr != nil {
+		return nil, err
+	}
+
+	if err := k.Driver.Set(key, b); err != nil {
+		slog.Warn(
+			"cannot copy keyring entry from the old app ID",
+			"key", key,
+			"err", err)
+	} else {
+		slog.Info("copied keyring entry from the old app ID", "key", key)
+	}
+	return b, nil
 }
 
 func (p *Page) asyncLoadFromSecrets(driver secret.Driver) {

@@ -18,14 +18,14 @@ import (
 	"github.com/diamondburned/gotkit/components/logui"
 	"github.com/diamondburned/gotkit/components/prefui"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/dijama/lildisc/internal/gtkcord"
-	"github.com/dijama/lildisc/internal/lilcss"
-	"github.com/dijama/lildisc/internal/mods"
-	"github.com/dijama/lildisc/internal/window"
-	"github.com/dijama/lildisc/internal/window/about"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/mods"
+	"github.com/vomitselfie/Lil-Disc/internal/window"
+	"github.com/vomitselfie/Lil-Disc/internal/window/about"
 
 	_ "github.com/diamondburned/gotkit/gtkutil/aggressivegc"
-	_ "github.com/dijama/lildisc/internal/icons"
+	_ "github.com/vomitselfie/Lil-Disc/internal/icons"
 )
 
 //go:embed po/*
@@ -184,7 +184,7 @@ func main() {
 	gtkcord.InitClientIdentity()
 
 	m := manager{}
-	m.app = app.New(context.Background(), "io.github.dijama.lildisc", "LilDisc")
+	m.app = app.New(context.Background(), "io.github.vomitselfie.lildisc", "LilDisc")
 	m.app.AddJSONActions(map[string]interface{}{
 		"app.preferences": func() { prefui.ShowDialog(m.win.Context()) },
 		"app.about":       func() { about.New(m.win.Context()).Present(m.win) },

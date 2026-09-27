@@ -237,7 +237,7 @@ internal/mods/
 LilDisc talks to Discord's gateway through
 [arikawa](https://github.com/diamondburned/arikawa) and renders with
 [gotk4](https://github.com/diamondburned/gotk4) and libadwaita. The app icon
-source is `internal/icons/io.github.dijama.lildisc.Source.svg`; after
+source is `internal/icons/io.github.vomitselfie.lildisc.Source.svg`; after
 changing it, run `go generate ./internal/icons/` to rebuild the icon bundle.
 
 ## Credits

@@ -13,7 +13,7 @@ import (
 	"github.com/diamondburned/gotkit/app/locale"
 	"github.com/dustin/go-humanize"
 
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 const (

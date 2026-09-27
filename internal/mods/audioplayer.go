@@ -12,7 +12,7 @@ import (
 
 	coreglib "github.com/diamondburned/gotk4/pkg/core/glib"
 
-	"github.com/dijama/lildisc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
 )
 
 var enableInlineAudio = prefs.NewBool(true, prefs.PropMeta{

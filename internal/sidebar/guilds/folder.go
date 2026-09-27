@@ -6,8 +6,8 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
-	"github.com/dijama/lildisc/internal/lilcss"
-	"github.com/dijama/lildisc/internal/sidebar/sidebutton"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/sidebar/sidebutton"
 )
 
 const (

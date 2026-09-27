@@ -18,14 +18,14 @@ import (
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/diamondburned/ningen/v3/states/read"
 	"libdb.so/ctxt"
-	"github.com/dijama/lildisc/internal/gtkcord"
-	"github.com/dijama/lildisc/internal/lilcss"
-	"github.com/dijama/lildisc/internal/messages"
-	"github.com/dijama/lildisc/internal/mods"
-	"github.com/dijama/lildisc/internal/sidebar"
-	"github.com/dijama/lildisc/internal/sidebar/channels"
-	"github.com/dijama/lildisc/internal/window/backbutton"
-	"github.com/dijama/lildisc/internal/window/quickswitcher"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/messages"
+	"github.com/vomitselfie/Lil-Disc/internal/mods"
+	"github.com/vomitselfie/Lil-Disc/internal/sidebar"
+	"github.com/vomitselfie/Lil-Disc/internal/sidebar/channels"
+	"github.com/vomitselfie/Lil-Disc/internal/window/backbutton"
+	"github.com/vomitselfie/Lil-Disc/internal/window/quickswitcher"
 )
 
 var lastGuildKey = app.NewSingleStateKey[discord.GuildID]("last-guild-state")

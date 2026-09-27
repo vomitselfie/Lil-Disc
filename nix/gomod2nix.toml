@@ -19,10 +19,6 @@ schema = 3
   [mod."github.com/diamondburned/arikawa/v3"]
     version = "v3.6.0"
     hash = "sha256-FxQG+xXZ8EIpV1IYCwoN20BK+V+b1uiZWPcP98lhBuw="
-  [mod."github.com/diamondburned/chatkit"]
-    version = "v0.0.0-20260810184859-dc6926cb8fa0"
-    hash = "sha256-PosqMxp09uAYCdsmq9idKZauq0jWkbtAWchocN3CoCk="
-    replaced = "github.com/dijama/chatkit"
   [mod."github.com/diamondburned/gotk4-adwaita/pkg"]
     version = "v0.0.0-20250703085708-8e7f01e2c815"
     hash = "sha256-9eLfZEPGrr7jQ39pRQSZIwMhxXUzzbcgT/AmAet2cCs="

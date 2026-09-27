@@ -25,6 +25,12 @@ func KeyringDriver(ctx context.Context) *Keyring {
 	}
 }
 
+// KeyringDriverForID creates a keyring driver for an explicit service ID, such
+// as the one an application used before its ID changed.
+func KeyringDriverForID(id string) *Keyring {
+	return &Keyring{id: id}
+}
+
 // IsAvailable returns true if the keyring API is available.
 func (k *Keyring) IsAvailable() bool {
 	return keyring.Set(k.id, "__secret_available_000", "") == nil

@@ -6,10 +6,10 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/ningen/v3"
-	"github.com/dijama/lildisc/internal/components/hoverpopover"
-	"github.com/dijama/lildisc/internal/gtkcord"
-	"github.com/dijama/lildisc/internal/lilcss"
-	"github.com/dijama/lildisc/internal/sidebar/sidebutton"
+	"github.com/vomitselfie/Lil-Disc/internal/components/hoverpopover"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/sidebar/sidebutton"
 )
 
 // Guild is a widget showing a single guild icon.

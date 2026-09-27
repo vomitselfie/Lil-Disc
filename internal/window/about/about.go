@@ -18,12 +18,12 @@ func New(ctx context.Context) *adw.AboutDialog {
 	about.SetApplicationName("LilDisc")
 	about.SetApplicationIcon("logo")
 	about.SetVersion("git") // fallback; overridden from build info below
-	about.SetWebsite("https://github.com/dijama/lildisc")
-	about.SetCopyright("© 2023 diamondburned and contributors\n© 2026 dijama (LilDisc fork)")
+	about.SetWebsite("https://github.com/vomitselfie/Lil-Disc")
+	about.SetCopyright("© 2023 diamondburned and contributors\n© 2026 Vomitselfie (LilDisc fork)")
 	about.SetLicenseType(gtk.LicenseGPL30)
 
 	about.SetDevelopers([]string{
-		"dijama (LilDisc fork)",
+		"Vomitselfie (LilDisc fork)",
 		"diamondburned",
 		"Dissent contributors",
 	})

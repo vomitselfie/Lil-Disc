@@ -10,7 +10,7 @@ import (
 	"github.com/diamondburned/gotkit/app/notify"
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/diamondburned/ningen/v3"
-	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 )
 
 var enableNotifyAll = prefs.NewBool(false, prefs.PropMeta{

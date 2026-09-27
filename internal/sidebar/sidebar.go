@@ -10,14 +10,14 @@ import (
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/dijama/lildisc/internal/gtkcord"
-	"github.com/dijama/lildisc/internal/lilcss"
-	"github.com/dijama/lildisc/internal/mods"
-	"github.com/dijama/lildisc/internal/sidebar/channels"
-	"github.com/dijama/lildisc/internal/sidebar/direct"
-	"github.com/dijama/lildisc/internal/sidebar/directbutton"
-	"github.com/dijama/lildisc/internal/sidebar/guilds"
-	"github.com/dijama/lildisc/internal/signaling"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/mods"
+	"github.com/vomitselfie/Lil-Disc/internal/sidebar/channels"
+	"github.com/vomitselfie/Lil-Disc/internal/sidebar/direct"
+	"github.com/vomitselfie/Lil-Disc/internal/sidebar/directbutton"
+	"github.com/vomitselfie/Lil-Disc/internal/sidebar/guilds"
+	"github.com/vomitselfie/Lil-Disc/internal/signaling"
 )
 
 // ViewKind identifies which list the sidebar is currently showing. The two

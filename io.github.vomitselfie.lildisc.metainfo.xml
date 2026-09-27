@@ -1,10 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <component type="desktop-application">
-  <id>io.github.dijama.lildisc</id>
+  <id>io.github.vomitselfie.lildisc</id>
   <name>LilDisc</name>
   <summary>Tiny native Discord app for Linux</summary>
-  <developer_name translatable="no">dijama</developer_name>
-  <launchable type="desktop-id">io.github.dijama.lildisc.desktop</launchable>
+  <developer_name translatable="no">Vomitselfie</developer_name>
+  <launchable type="desktop-id">io.github.vomitselfie.lildisc.desktop</launchable>
   <translation type="gettext">lildisc</translation>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0+</project_license>
@@ -40,8 +40,8 @@
     </p>
   </description>
 
-  <url type="homepage">https://github.com/dijama/lildisc</url>
-  <url type="bugtracker">https://github.com/dijama/lildisc/issues</url>
+  <url type="homepage">https://github.com/vomitselfie/Lil-Disc</url>
+  <url type="bugtracker">https://github.com/vomitselfie/Lil-Disc/issues</url>
 
   <kudos>
     <kudo>HiDpiIcon</kudo>

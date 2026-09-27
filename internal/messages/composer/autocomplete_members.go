@@ -13,7 +13,7 @@ import (
 	"github.com/diamondburned/gotkit/components/onlineimage"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/sahilm/fuzzy"
-	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 )
 
 const memberCacheExpiry = 2 * time.Second

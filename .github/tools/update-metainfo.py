@@ -11,8 +11,8 @@ from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
 
-METAINFO_PATH = "io.github.dijama.lildisc.metainfo.xml"
-REPOSITORY_URL = "https://github.com/dijama/lildisc"
+METAINFO_PATH = "io.github.vomitselfie.lildisc.metainfo.xml"
+REPOSITORY_URL = "https://github.com/vomitselfie/Lil-Disc"
 
 arg_list = sys.argv[1:]
 rel_version = arg_list[0]

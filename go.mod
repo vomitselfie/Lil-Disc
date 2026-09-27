@@ -1,4 +1,4 @@
-module github.com/dijama/lildisc
+module github.com/vomitselfie/Lil-Disc
 
 go 1.24.0
 
