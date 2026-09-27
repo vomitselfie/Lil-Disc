@@ -3,7 +3,7 @@ package mdrender
 import (
 	"context"
 
-	"github.com/diamondburned/chatkit/md/block"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/block"
 	"github.com/yuin/goldmark/ast"
 )
 

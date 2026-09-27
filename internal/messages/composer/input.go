@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/chatkit/components/autocomplete"
-	"github.com/diamondburned/chatkit/md/mdrender"
+	"github.com/vomitselfie/Lil-Disc/chatkit/components/autocomplete"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/mdrender"
 	"github.com/diamondburned/gotk4/pkg/core/gioutil"
 	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"

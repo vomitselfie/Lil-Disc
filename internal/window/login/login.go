@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/diamondburned/arikawa/v3/state"
-	"github.com/diamondburned/chatkit/kits/secret"
+	"github.com/vomitselfie/Lil-Disc/chatkit/kits/secret"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/pkg/errors"

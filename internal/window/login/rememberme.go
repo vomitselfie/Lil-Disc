@@ -3,8 +3,8 @@ package login
 import (
 	"context"
 
-	"github.com/diamondburned/chatkit/components/secretdialog"
-	"github.com/diamondburned/chatkit/kits/secret"
+	"github.com/vomitselfie/Lil-Disc/chatkit/components/secretdialog"
+	"github.com/vomitselfie/Lil-Disc/chatkit/kits/secret"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"

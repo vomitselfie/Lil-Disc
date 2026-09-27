@@ -10,9 +10,9 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/state"
-	"github.com/diamondburned/chatkit/components/author"
-	"github.com/diamondburned/chatkit/md"
-	"github.com/diamondburned/chatkit/md/mdrender"
+	"github.com/vomitselfie/Lil-Disc/chatkit/components/author"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/mdrender"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"

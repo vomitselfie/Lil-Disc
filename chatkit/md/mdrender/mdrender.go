@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/diamondburned/chatkit/md/block"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/block"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
 	"libdb.so/ctxt"

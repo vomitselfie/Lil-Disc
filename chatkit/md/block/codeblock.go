@@ -1,8 +1,8 @@
 package block
 
 import (
-	"github.com/diamondburned/chatkit/md"
-	"github.com/diamondburned/chatkit/md/hl"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/hl"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"

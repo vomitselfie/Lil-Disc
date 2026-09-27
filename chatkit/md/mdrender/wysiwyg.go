@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/diamondburned/chatkit/md"
-	"github.com/diamondburned/chatkit/md/hl"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/hl"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/gtkutil/textutil"
 	"github.com/yuin/goldmark/ast"

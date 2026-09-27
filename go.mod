@@ -4,22 +4,10 @@ go 1.24.0
 
 // replace github.com/diamondburned/gotk4/pkg => github.com/diamondburned/gotk4/pkg v0.3.2-0.20250222233909-d6bdcc0f7298
 
-// Patched chatkit: releases the GtkMediaFile that video and GIFV embeds leak,
-// and fixes their unmap handlers, which called a property getter and so never
-// paused anything. Both are open upstream as separate pull requests against
-// diamondburned/chatkit. The fork that held them merged (dijama/chatkit @
-// lildisc-local) is no longer reachable, so the patched source now lives in
-// ./chatkit, vendored from the last published version, and carries LilDisc's
-// own chatkit fixes too (video playback errors are reported, not dropped).
-//
-// Remove this line once the pull requests land — the pinned require above
-// goes back to being the real dependency.
-replace github.com/diamondburned/chatkit => ./chatkit
-
 require (
+	github.com/alecthomas/chroma v0.10.0
 	github.com/diamondburned/adaptive v0.0.2-0.20221227093656-fa139be203a8
 	github.com/diamondburned/arikawa/v3 v3.6.0
-	github.com/diamondburned/chatkit v0.0.0-20240614105536-5788b19145bc
 	github.com/diamondburned/gotk4-adwaita/pkg v0.0.0-20250703085708-8e7f01e2c815
 	github.com/diamondburned/gotk4/pkg v0.3.2-0.20250703063411-16654385f59a
 	github.com/diamondburned/gotkit v0.0.0-20250223060613-69614d9e70a9
@@ -31,7 +19,10 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sahilm/fuzzy v0.1.1
 	github.com/yuin/goldmark v1.7.11
+	github.com/zalando/go-keyring v0.2.6
+	golang.org/x/crypto v0.37.0
 	libdb.so/ctxt v0.0.0-20240229093153-2db38a5d3c12
+	libdb.so/go-emoji v0.0.0-20240508073816-39776eee41ac
 	libdb.so/gotk4-sourceview/pkg v0.0.0-20240818070527-98263515a466
 	libdb.so/gotk4-spelling/pkg v0.0.0-20241128063647-a9edc40bddb0
 )
@@ -39,7 +30,6 @@ require (
 require (
 	al.essio.dev/pkg/shellescape v1.6.0 // indirect
 	github.com/KarpelesLab/weak v0.1.1 // indirect
-	github.com/alecthomas/chroma v0.10.0 // indirect
 	github.com/danieljoos/wincred v1.2.2 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/gorilla/schema v1.4.1 // indirect
@@ -50,13 +40,10 @@ require (
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/twmb/murmur3 v1.1.8 // indirect
 	github.com/yalue/merged_fs v1.3.0 // indirect
-	github.com/zalando/go-keyring v0.2.6 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20231121144256-b99613f794b6 // indirect
-	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
-	libdb.so/go-emoji v0.0.0-20240508073816-39776eee41ac // indirect
 )

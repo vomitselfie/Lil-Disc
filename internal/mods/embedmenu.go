@@ -10,7 +10,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/diamondburned/chatkit/components/embed"
+	"github.com/vomitselfie/Lil-Disc/chatkit/components/embed"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"

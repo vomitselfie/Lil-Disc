@@ -4,7 +4,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/diamondburned/chatkit/md"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/gtkutil/cssutil"

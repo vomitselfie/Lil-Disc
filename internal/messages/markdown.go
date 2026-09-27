@@ -5,9 +5,9 @@ import (
 	"log/slog"
 
 	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/chatkit/md"
-	"github.com/diamondburned/chatkit/md/block"
-	"github.com/diamondburned/chatkit/md/mdrender"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/block"
+	"github.com/vomitselfie/Lil-Disc/chatkit/md/mdrender"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/components/onlineimage"
