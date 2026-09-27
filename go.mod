@@ -7,12 +7,14 @@ go 1.24.0
 // Patched chatkit: releases the GtkMediaFile that video and GIFV embeds leak,
 // and fixes their unmap handlers, which called a property getter and so never
 // paused anything. Both are open upstream as separate pull requests against
-// diamondburned/chatkit; this points at the fork branch holding the two of
-// them merged (dijama/chatkit @ lildisc-local).
+// diamondburned/chatkit. The fork that held them merged (dijama/chatkit @
+// lildisc-local) is no longer reachable, so the patched source now lives in
+// ./chatkit, vendored from the last published version, and carries LilDisc's
+// own chatkit fixes too (video playback errors are reported, not dropped).
 //
 // Remove this line once the pull requests land — the pinned require above
 // goes back to being the real dependency.
-replace github.com/diamondburned/chatkit => github.com/dijama/chatkit v0.0.0-20260810184859-dc6926cb8fa0
+replace github.com/diamondburned/chatkit => ./chatkit
 
 require (
 	github.com/diamondburned/adaptive v0.0.2-0.20221227093656-fa139be203a8
