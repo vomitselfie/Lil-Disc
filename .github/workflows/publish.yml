@@ -284,9 +284,12 @@ jobs:
           # nogtksource drops the GtkSourceView composer and gspell checking,
           # exactly as the Windows build does, so gtk4 and libadwaita are the
           # only Homebrew dependencies needed.
-          go build -tags nogtksource -o result/lildisc .
+          # Name the file for its platform: releases attach files by their
+          # own name, so a bare "lildisc" gave no hint it was for macOS.
+          name="lildisc-macos-$(uname -m)"
+          go build -tags nogtksource -o "result/$name" .
 
-          echo "name=lildisc-macos-$(uname -m)" >> "$GITHUB_OUTPUT"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
