@@ -72,7 +72,10 @@
   </branding>
 
   <releases>
-    <release version="0.1.0" date="2026-04-08"/>
+    <release version="1.0.2" date="2026-09-27">
+      <url>https://github.com/vomitselfie/Lil-Disc/releases/tag/v1.0.2</url>
+    </release>
+    <release version="0.1.0" date="2026-04-08" />
   </releases>
 
 </component>
