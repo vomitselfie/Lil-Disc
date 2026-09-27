@@ -260,7 +260,23 @@ jobs:
       - name: Build
         id: build
         run: |
-          export PKG_CONFIG_PATH="$(brew --prefix)/lib/pkgconfig:$PKG_CONFIG_PATH"
+          # Name each formula's own pkgconfig directory rather than relying on
+          # Homebrew's shared prefix: libffi, which gobject-introspection
+          # requires, is keg-only, and a formula that failed to link would
+          # otherwise be invisible to pkg-config.
+          for f in gobject-introspection libffi glib gtk4 libadwaita; do
+            PKG_CONFIG_PATH="$(brew --prefix "$f")/lib/pkgconfig:$PKG_CONFIG_PATH"
+          done
+          export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:$(brew --prefix)/lib/pkgconfig"
+
+          # Fail here, with pkg-config's reasons, rather than deep in cgo.
+          if ! pkg-config --modversion gobject-introspection-1.0 gtk4 libadwaita-1; then
+            echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
+            ls "$(brew --prefix gobject-introspection)/lib/pkgconfig" || true
+            pkg-config --debug --exists gobject-introspection-1.0 2>&1 | tail -20
+            exit 1
+          fi
+
           mkdir -p result
 
           # nogtksource drops the GtkSourceView composer and gspell checking,
