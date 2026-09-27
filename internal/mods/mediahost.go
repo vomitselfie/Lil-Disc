@@ -15,11 +15,52 @@ import (
 	"github.com/diamondburned/gotkit/app/prefs"
 )
 
-var enableMediaHost = prefs.NewBool(true, prefs.PropMeta{
-	Name:        "External Media Host Fallback",
-	Section:     "Mods",
-	Description: "When a file is larger than Discord's upload limit, automatically upload it to 0x0.st and paste the URL into the composer instead.",
+// MediaHostPolicy is what happens to a file too large for Discord.
+type MediaHostPolicy string
+
+const (
+	// MediaHostAsk asks before each upload, offering to make it Always.
+	MediaHostAsk MediaHostPolicy = "Ask"
+	// MediaHostAlways uploads without asking.
+	MediaHostAlways MediaHostPolicy = "Always"
+	// MediaHostNever drops the file.
+	MediaHostNever MediaHostPolicy = "Never"
+)
+
+// Uploading a file the user tried to send to Discord to a public,
+// anonymous host instead is a different act from sending it to Discord, so
+// it asks first by default. This replaces a boolean that was on by default
+// and uploaded silently. It has a new name so the old saved "on" is not
+// read as consent.
+var mediaHostPolicy = prefs.NewEnumList(MediaHostAsk, prefs.EnumListMeta[MediaHostPolicy]{
+	PropMeta: prefs.PropMeta{
+		Name:    "Upload Oversized Files to 0x0.st",
+		Section: "Mods",
+		Description: "When a file is larger than Discord's upload limit, it can be " +
+			"uploaded to 0x0.st, a public anonymous file host, and its link " +
+			"pasted into the message instead. Anyone with the link can " +
+			"download the file.",
+	},
+	Options: []MediaHostPolicy{MediaHostAsk, MediaHostAlways, MediaHostNever},
 })
+
+// MediaHostPolicyValue returns the current policy for oversized files.
+func MediaHostPolicyValue() MediaHostPolicy { return mediaHostPolicy.Value() }
+
+// SetMediaHostPolicy changes the policy and saves preferences, for the
+// "Always" answer to the consent prompt.
+func SetMediaHostPolicy(ctx context.Context, p MediaHostPolicy) {
+	mediaHostPolicy.Publish(p)
+	snapshot := prefs.TakeSnapshot()
+	go func() {
+		if err := snapshot.Save(ctx); err != nil {
+			slog.Warn("mediahost: cannot save preferences", "err", err)
+		}
+	}()
+}
+
+// MediaHostName is the host oversized files go to, for user-facing text.
+const MediaHostName = "0x0.st"
 
 var freeUploadLimitMiB = prefs.NewInt(20, prefs.IntMeta{
 	Name:    "Free Upload Limit (MiB)",
@@ -73,13 +114,12 @@ type MediaUploadRequest struct {
 // failure, url is empty and err is non-nil.
 //
 // Uploads go to 0x0.st (size-based retention, 512 MiB limit): anonymous, no
-// API key, no fingerprinting beyond a plain multipart POST.
-//
-// litterbox.catbox.moe used to be tried first and is gone. There is no second
-// host now, so a failure here is terminal rather than a fallback.
+// API key, no fingerprinting beyond a plain multipart POST. It is the only
+// host, so a failure here is terminal rather than a fallback. The caller is
+// responsible for having the user's consent; see MediaHostPolicyValue.
 func UploadToMediaHost(ctx context.Context, req MediaUploadRequest, onResult func(url string, err error)) {
-	if !enableMediaHost.Value() {
-		glib.IdleAdd(func() { onResult("", errors.New("media host fallback disabled in preferences")) })
+	if mediaHostPolicy.Value() == MediaHostNever {
+		glib.IdleAdd(func() { onResult("", errors.New("uploading oversized files is turned off in preferences")) })
 		return
 	}
 	if req.Size <= 0 {
@@ -119,19 +159,12 @@ func uploadToHost(ctx context.Context, req MediaUploadRequest) (string, error) {
 //
 // Returns the URL on success as the entire response body.
 func uploadToZeroX(ctx context.Context, req MediaUploadRequest) (string, error) {
-	return doMultipartUpload(ctx, "https://0x0.st", "file", req, nil)
+	return doMultipartUpload(ctx, "https://0x0.st", "file", req)
 }
 
 // doMultipartUpload streams the file via an io.Pipe so we never buffer the
-// whole payload in memory — important for the gigabyte case. The form
-// fields written by extraFields (if any) are emitted before the file part.
-func doMultipartUpload(
-	ctx context.Context,
-	endpoint string,
-	fileFieldName string,
-	req MediaUploadRequest,
-	extraFields func(*multipart.Writer) error,
-) (string, error) {
+// whole payload in memory — important for the gigabyte case.
+func doMultipartUpload(ctx context.Context, endpoint, fileFieldName string, req MediaUploadRequest) (string, error) {
 	pr, pw := io.Pipe()
 	mw := multipart.NewWriter(pw)
 
@@ -139,13 +172,6 @@ func doMultipartUpload(
 		// Any error from this goroutine is propagated through the pipe.
 		writeErr := func(err error) {
 			pw.CloseWithError(err)
-		}
-
-		if extraFields != nil {
-			if err := extraFields(mw); err != nil {
-				writeErr(fmt.Errorf("extra fields: %w", err))
-				return
-			}
 		}
 
 		rc, err := req.Open()

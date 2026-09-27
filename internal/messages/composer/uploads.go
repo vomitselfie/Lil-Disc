@@ -41,9 +41,9 @@ type UploadTray struct {
 
 	// mod: mediahost — invoked when a file exceeds maxUploadSize, in
 	// place of the old "File Too Large" alert dialog. The composer
-	// installs a handler that uploads to an external media host (with
-	// 0x0.st as a fallback) and pastes the resulting URL into the
-	// input buffer. nil = legacy behaviour (drop the file silently).
+	// installs a handler that, with the user's consent, uploads to 0x0.st
+	// and pastes the resulting URL into the input buffer.
+	// nil = legacy behaviour (drop the file silently).
 	onOversize func(*File)
 }
 

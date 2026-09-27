@@ -23,6 +23,7 @@ import (
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/diamondburned/gotkit/gtkutil"
 	"github.com/diamondburned/gotkit/gtkutil/mediautil"
+	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
 	"github.com/vomitselfie/Lil-Disc/internal/gtkcord"
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
@@ -573,16 +574,72 @@ func (v *View) addFileToTray(f *File) {
 }
 
 // handleOversizeUpload is the oversize handler installed on UploadTray.
-// It inserts a placeholder string at the cursor position so the user can
-// see what's uploading, kicks off the media-host upload on a background
-// goroutine, and replaces the placeholder with the resulting URL (or an
-// error marker) when the upload terminates.
+// Depending on the media host preference it drops the file, uploads it, or
+// first asks whether to send it to a public host at all.
+func (v *View) handleOversizeUpload(f *File) {
+	switch mods.MediaHostPolicyValue() {
+	case mods.MediaHostNever:
+		v.toastOversize(f)
+	case mods.MediaHostAlways:
+		v.uploadOversize(f)
+	default:
+		v.askOversizeUpload(f)
+	}
+}
+
+func (v *View) toastOversize(f *File) {
+	v.ctrl.AddToast(adw.NewToast(locale.Sprintf(
+		"%s is too large for Discord and was not added.", f.Name)))
+}
+
+// askOversizeUpload asks before sending a file to the public host. The file
+// was meant for Discord; putting it on a public anonymous host instead is a
+// different decision, and one the user has to make.
+func (v *View) askOversizeUpload(f *File) {
+	const (
+		respCancel = "cancel"
+		respOnce   = "once"
+		respAlways = "always"
+	)
+
+	dialog := adw.NewAlertDialog(
+		locale.Get("File Too Large for Discord"),
+		locale.Sprintf(
+			"%s (%s) is over Discord's upload limit. It can be uploaded to %s "+
+				"instead, and its link pasted into your message.\n\n"+
+				"%s is a public, anonymous file host: anyone with the link "+
+				"can download the file.",
+			f.Name, humanize.IBytes(uint64(f.Size)), mods.MediaHostName, mods.MediaHostName),
+	)
+	dialog.AddResponse(respCancel, locale.Get("_Cancel"))
+	dialog.AddResponse(respAlways, locale.Get("_Always Upload"))
+	dialog.AddResponse(respOnce, locale.Get("_Upload"))
+	dialog.SetResponseAppearance(respOnce, adw.ResponseSuggested)
+	dialog.SetDefaultResponse(respOnce)
+	dialog.SetCloseResponse(respCancel)
+
+	dialog.ConnectResponse(func(response string) {
+		switch response {
+		case respAlways:
+			mods.SetMediaHostPolicy(v.ctx, mods.MediaHostAlways)
+			v.uploadOversize(f)
+		case respOnce:
+			v.uploadOversize(f)
+		}
+	})
+	dialog.Present(v)
+}
+
+// uploadOversize inserts a placeholder string at the cursor position so the
+// user can see what's uploading, kicks off the media-host upload on a
+// background goroutine, and replaces the placeholder with the resulting URL
+// (or an error marker) when the upload terminates.
 //
 // The placeholder range is tracked via two gtk.TextMarks with opposing
 // gravities so the slot survives the user typing around it.
-func (v *View) handleOversizeUpload(f *File) {
+func (v *View) uploadOversize(f *File) {
 	buf := v.Input.Buffer
-	placeholder := "[uploading " + f.Name + " to 0x0.st…] "
+	placeholder := "[uploading " + f.Name + " to " + mods.MediaHostName + "…] "
 
 	// Insert at the current cursor position. CreateMark with leftGravity=true
 	// makes startMark stick at the start of the inserted text; the default

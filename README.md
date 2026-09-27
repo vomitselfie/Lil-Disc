@@ -95,7 +95,7 @@ Everything below is optional. Open **Preferences → Mods** and flip switches.
 - Paste images from the clipboard with Ctrl+V, including ones copied from a browser.
 - A preview bar shows what you're replying to.
 - Built-in GIF picker (Discord's own GIF search), sticker picker and server emoji picker with fuzzy search.
-- Files too big for Discord's free upload limit go to [0x0.st](https://0x0.st) instead, and the link is dropped into your message. The size limit is adjustable, because Discord keeps changing theirs.
+- Files too big for Discord's free upload limit can go to [0x0.st](https://0x0.st) instead, with the link dropped into your message. LilDisc asks first, because 0x0.st is public: anyone with the link can download the file. You can set it to always or never upload in preferences. The size limit is adjustable too, because Discord keeps changing theirs.
 
 **Finding your way around**
 - Drag the divider to resize the sidebar. Below a certain width it collapses to avatars only.
