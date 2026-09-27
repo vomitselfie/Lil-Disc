@@ -20,11 +20,11 @@ import (
 	"github.com/diamondburned/gotkit/app/locale"
 	"github.com/diamondburned/gotkit/components/onlineimage"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/diamondburned/ningen/v3/discordmd"
 	"libdb.so/ctxt"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/mods"
 )
 
@@ -47,7 +47,7 @@ type Content struct {
 	msgID discord.MessageID
 }
 
-var contentCSS = cssutil.Applier("message-content-box", `
+var contentCSS = lilcss.Applier("message-content-box", `
 	.message-content-box {
 		margin-right: 4px;
 	}
@@ -164,7 +164,7 @@ func (c *Content) setMenu() {
 	}
 }
 
-var systemContentCSS = cssutil.Applier("message-system-content", `
+var systemContentCSS = lilcss.Applier("message-system-content", `
 	.message-system-content {
 		font-style: italic;
 		color: alpha(@theme_fg_color, 0.9);
@@ -665,7 +665,7 @@ func (c *Content) clear() {
 	c.child = c.child[:0]
 }
 
-var redactedContentCSS = cssutil.Applier("message-redacted-content", `
+var redactedContentCSS = lilcss.Applier("message-redacted-content", `
 	.message-redacted-content {
 		font-style: italic;
 		color: alpha(@theme_fg_color, 0.75);

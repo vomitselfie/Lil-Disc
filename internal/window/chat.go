@@ -16,10 +16,10 @@ import (
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/ningen/v3/states/read"
 	"libdb.so/ctxt"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/messages"
 	"github.com/dijama/lildisc/internal/mods"
 	"github.com/dijama/lildisc/internal/sidebar"
@@ -93,7 +93,7 @@ type chatPageView struct {
 	headerButtons []gtk.Widgetter
 }
 
-var chatPageCSS = cssutil.Applier("window-chatpage", `
+var chatPageCSS = lilcss.Applier("window-chatpage", `
 	.window-chatpage-rightbox > .top-bar > windowhandle > .collapse-spacing {
 		padding: 0;
 	}
@@ -102,10 +102,12 @@ var chatPageCSS = cssutil.Applier("window-chatpage", `
 		box-shadow: none;
 	}
 	.right-header-label {
-		font-weight: bold;
+		font-weight: 650;
+		letter-spacing: -0.01em;
 	}
 	.right-header-channel-icon {
-		margin-right: 4px;
+		margin-right: {$space_sm};
+		color: @lil_text_faint;
 	}
 `)
 

@@ -10,10 +10,10 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/ningen/v3/states/read"
 	"github.com/pkg/errors"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 // ViewChild is a child inside the guilds view. It is either a *Guild or a
@@ -33,7 +33,7 @@ type View struct {
 	ctx context.Context
 }
 
-var viewCSS = cssutil.Applier("guild-view", `
+var viewCSS = lilcss.Applier("guild-view", `
 	.guild-view {
 		margin: 4px 0;
 	}

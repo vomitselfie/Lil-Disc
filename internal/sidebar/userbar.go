@@ -11,9 +11,9 @@ import (
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/components/onlineimage"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/mods"
 )
 
@@ -35,7 +35,7 @@ type userBar struct {
 	fallbackURL string
 }
 
-var userBarCSS = cssutil.Applier("user-bar", `
+var userBarCSS = lilcss.Applier("user-bar", `
 	/* The user bar had no background, no separator and no hover feedback at
 	   all, so it read as loose widgets at the bottom of the sidebar rather
 	   than a bar. */

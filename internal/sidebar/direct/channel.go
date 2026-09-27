@@ -9,10 +9,10 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/components/onlineimage"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/diamondburned/ningen/v3"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/mods"
 )
 
@@ -32,7 +32,7 @@ type Channel struct {
 	id  discord.ChannelID
 }
 
-var channelCSS = cssutil.Applier("direct-channel", `
+var channelCSS = lilcss.Applier("direct-channel", `
 	.direct-channel {
 		padding: 4px 6px;
 	}
@@ -42,7 +42,7 @@ var channelCSS = cssutil.Applier("direct-channel", `
 `)
 
 // mod: presence — avatar overlay needs the margin instead of the avatar itself
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.direct-channel overlay {
 		margin-right: 6px;
 	}

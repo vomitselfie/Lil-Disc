@@ -9,10 +9,10 @@ import (
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/ningen/v3"
 	"github.com/diamondburned/ningen/v3/states/read"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/sidebar/sidebutton"
 )
 
@@ -28,7 +28,7 @@ type View struct {
 	ctx context.Context
 }
 
-var viewCSS = cssutil.Applier("dmbutton-view", `
+var viewCSS = lilcss.Applier("dmbutton-view", `
 `)
 
 func NewView(ctx context.Context) *View {

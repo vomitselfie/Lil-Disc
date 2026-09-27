@@ -5,10 +5,11 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
-var channelIndicatorCSS = cssutil.Applier("channel-item-indicator", `
+var channelIndicatorCSS = lilcss.Applier("channel-item-indicator", `
 	@define-color channel_item_indicator_color @theme_bg_color;
 
 	.channel-item-indicator {
@@ -39,7 +40,7 @@ var channelIndicatorCSS = cssutil.Applier("channel-item-indicator", `
 	}
 `)
 
-var channelIconImageCSS = cssutil.Applier("channel-icon-image", `
+var channelIconImageCSS = lilcss.Applier("channel-icon-image", `
 	.channel-icon-image {
 		min-width: 0px;
 	}

@@ -23,10 +23,10 @@ import (
 	"github.com/diamondburned/gotkit/app/locale"
 	"github.com/diamondburned/gotkit/components/autoscroll"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/pkg/errors"
 	"github.com/dijama/lildisc/internal/components/hoverpopover"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/messages/composer"
 	"github.com/dijama/lildisc/internal/mods"
 )
@@ -93,7 +93,7 @@ type View struct {
 	chID discord.ChannelID
 }
 
-var viewCSS = cssutil.Applier("message-view", `
+var viewCSS = lilcss.Applier("message-view", `
 	.message-list {
 		background: none;
 	}
@@ -106,12 +106,14 @@ var viewCSS = cssutil.Applier("message-view", `
 	}
 	.message-show-more {
 		background: none;
-		border-radius: 0;
-		font-size: 0.85em;
-		opacity: 0.65;
+		border-radius: {$radius_md};
+		margin: {$space_xs} {$space_lg};
+		font-size: {$font_small};
+		color: @lil_text_dim;
 	}
 	.message-show-more:hover {
-		background: alpha(@theme_fg_color, 0.075);
+		background: @lil_hover;
+		color: @lil_text;
 	}
 	/* Narrow layout: reclaim the avatar gutter for text. */
 	.message-view-narrow .message-cozy-avatar {
@@ -127,7 +129,10 @@ var viewCSS = cssutil.Applier("message-view", `
 		margin-top: -1em;
 	}
 	.messages-typing-box {
-		background-color: @theme_bg_color;
+		background-color: @lil_surface;
+		color: @lil_text_dim;
+		border-radius: {$radius_md} {$radius_md} 0 0;
+		margin-left: {$space_xl};
 	}
 	.message-list,
 	.message-scroll scrollbar.vertical {

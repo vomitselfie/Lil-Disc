@@ -10,8 +10,9 @@ import (
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/textutil"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 type uploadingLabel struct {
@@ -21,7 +22,7 @@ type uploadingLabel struct {
 	max int
 }
 
-var uploadingLabelCSS = cssutil.Applier("message-uploading-label", `
+var uploadingLabelCSS = lilcss.Applier("message-uploading-label", `
 	.message-uploading-label {
 		opacity: 0.75;
 		font-size: 0.8em;

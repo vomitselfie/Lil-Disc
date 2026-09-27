@@ -2,8 +2,9 @@ package sidebutton
 
 import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/ningen/v3"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 type PillState uint8
@@ -81,13 +82,13 @@ type Pill struct {
 	oldAttrs PillAttributes
 }
 
-var stripCSS = cssutil.Applier("guilds-pill", `
+var stripCSS = lilcss.Applier("guilds-pill", `
 
 	.guilds-pill {
 		padding: 0;
-		transition: 100ms linear;
+		transition: 220ms cubic-bezier(0.34, 1.4, 0.64, 1);
 		border-radius: 0 99px 99px 0;
-		background-color: @theme_fg_color;
+		background-color: @lil_text;
 	}
 	.guilds-pill.guilds-pill-active {
 		padding: 20px 3px;

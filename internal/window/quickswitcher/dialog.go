@@ -7,7 +7,8 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 // Dialog is a Quick Switcher dialog.
@@ -22,7 +23,7 @@ func ShowDialog(ctx context.Context) {
 	d.Present(app.GTKWindowFromContext(ctx))
 }
 
-var dialogCSS = cssutil.Applier("quickswitcher-dialog", "")
+var dialogCSS = lilcss.Applier("quickswitcher-dialog", "")
 
 // NewDialog creates a new Quick Switcher dialog.
 func NewDialog(ctx context.Context) *Dialog {

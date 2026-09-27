@@ -22,10 +22,10 @@ import (
 	"github.com/diamondburned/gotkit/app/locale"
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/mediautil"
 	"github.com/pkg/errors"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/mods"
 )
 
@@ -151,36 +151,66 @@ type View struct {
 	}
 }
 
-var viewCSS = cssutil.Applier("composer-view", `
+var viewCSS = lilcss.Applier("composer-view", `
 	.composer-view * {
 		/* Fix spacing for certain GTK themes such as stock Adwaita. */
 		min-height: 0;
 	}
+	/* The composer floats: a raised, rounded card inset from the window
+	   edges, rather than a strip of stock buttons pinned to the bottom. */
+	.composer-view {
+		margin: 0 {$space_lg} {$space_lg} {$space_lg};
+		background-color: @lil_surface_raised;
+		border: 1px solid @lil_border;
+		border-radius: {$radius_xl};
+		box-shadow: 0 4px 18px alpha(black, 0.10);
+		transition: border-color 150ms ease, box-shadow 150ms ease;
+	}
+	.composer-view:focus-within {
+		border-color: alpha(@lil_accent, 0.55);
+		box-shadow: 0 0 0 3px alpha(@lil_accent, 0.12),
+		            0 4px 18px alpha(black, 0.10);
+	}
+	.composer-view.composer-editing,
+	.composer-view.composer-replying {
+		border-color: alpha(@lil_accent, 0.45);
+	}
 	.composer-left-actions button,
 	.composer-right-actions button {
-		padding-top: 0.5em;
-		padding-bottom: 0.5em;
+		padding: {$space_sm};
+		border-radius: {$radius_md};
+		color: @lil_text_dim;
+		background: none;
+	}
+	.composer-left-actions button:hover,
+	.composer-right-actions button:hover {
+		color: @lil_text;
+		background: @lil_hover;
 	}
 	.composer-left-actions {
-		margin: 4px 0.65em;
+		margin: {$space_xs} {$space_sm};
 	}
 	.composer-right-actions button.toggle:checked {
-		background-color: alpha(@accent_color, 0.25);
-		color: @accent_color;
+		background-color: @lil_selected;
+		color: @lil_accent_text;
 	}
 	.composer-right-actions {
-		margin: 4px 0.65em 4px 0;
+		margin: {$space_xs} {$space_sm} {$space_xs} 0;
 	}
 	.composer-right-actions > *:not(:first-child) {
-		margin-left: 4px;
+		margin-left: {$space_hair};
+	}
+	.composer-right-actions .composer-send {
+		color: @lil_accent_text;
 	}
 	.composer-placeholder {
-		padding: 12px 2px;
-		color: alpha(@theme_fg_color, 0.65);
+		padding: {$space_lg} {$space_hair};
+		color: @lil_text_faint;
 	}
 	.composer-msg-length {
-		font-size: 0.8em;
-		margin: 0.25em 0.5em;
+		font-size: {$font_micro};
+		font-feature-settings: "tnum";
+		margin: {$space_xs} {$space_md};
 		opacity: 0;
 		transition: opacity 0.1s;
 	}

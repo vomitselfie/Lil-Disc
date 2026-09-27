@@ -10,8 +10,8 @@ import (
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/mods"
 	"github.com/dijama/lildisc/internal/sidebar/channels"
 	"github.com/dijama/lildisc/internal/sidebar/direct"
@@ -61,8 +61,8 @@ type Sidebar struct {
 	ctx context.Context
 }
 
-var sidebarCSS = cssutil.Applier("sidebar-sidebar", `
-	@define-color sidebar_bg @lil_surface_sunken;
+var sidebarCSS = lilcss.Applier("sidebar-sidebar", `
+	@define-color sidebar_bg @lil_rail;
 
 	.sidebar-guildside {
 		background-color: @sidebar_bg;

@@ -7,9 +7,9 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/components/onlineimage"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/sidebar/channels"
 )
 
@@ -72,7 +72,7 @@ func newChannelItem(state *gtkcord.State, guild *discord.Guild, ch *discord.Chan
 
 func (it channelItem) String() string { return it.search }
 
-var channelCSS = cssutil.Applier("quickswitcher-channel", `
+var channelCSS = lilcss.Applier("quickswitcher-channel", `
 	.quickswitcher-channel-icon {
 		margin: 2px 8px;
 		min-width:  {$inline_emoji_size};
@@ -165,7 +165,7 @@ func newGuildItem(guild *discord.Guild) guildItem {
 
 func (it guildItem) String() string { return it.Name }
 
-var guildCSS = cssutil.Applier("quickswitcher-guild", `
+var guildCSS = lilcss.Applier("quickswitcher-guild", `
 	.quickswitcher-guild-icon {
 		margin: 2px 8px;
 		min-width:  {$inline_emoji_size};

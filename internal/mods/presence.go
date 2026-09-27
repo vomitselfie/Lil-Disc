@@ -7,8 +7,8 @@ import (
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app/prefs"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 var enablePresence = prefs.NewBool(true, prefs.PropMeta{
@@ -17,7 +17,7 @@ var enablePresence = prefs.NewBool(true, prefs.PropMeta{
 	Description: "Show colored status dots next to usernames.",
 })
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.mod-presence-dot {
 		font-size: 9px;
 		min-width: 9px;

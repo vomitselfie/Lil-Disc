@@ -18,15 +18,15 @@ import (
 	"github.com/diamondburned/gotkit/app/locale"
 	"github.com/diamondburned/gotkit/components/onlineimage"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/diamondburned/gotkit/gtkutil/textutil"
 	"github.com/diamondburned/ningen/v3"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/mods"
 )
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	/* Rounded and inset, so hovering a message highlights the message rather
 	   than painting a band edge to edge across the clamp width. */
 	.message-box {
@@ -101,7 +101,7 @@ var (
 	_ MessageWithUser = (*cozyMessage)(nil)
 )
 
-var blockedCSS = cssutil.Applier("message-blocked", `
+var blockedCSS = lilcss.Applier("message-blocked", `
 	.message-blocked {
 		transition-property: all;
 		transition-duration: 100ms;
@@ -230,7 +230,7 @@ func menuItemIfOK(actions map[string]func(), label locale.Localized, action stri
 	return gtkutil.MenuItem(label, action, ok)
 }
 
-var sourceCSS = cssutil.Applier("message-source", `
+var sourceCSS = lilcss.Applier("message-source", `
 	.message-source {
 		padding: 6px 4px;
 		font-family: monospace;
@@ -335,7 +335,7 @@ type cozyMessage struct {
 
 var _ MessageWithUser = (*cozyMessage)(nil)
 
-var cozyCSS = cssutil.Applier("message-cozy", `
+var cozyCSS = lilcss.Applier("message-cozy", `
 	.message-cozy {
 		padding-top: 0.25em;
 		padding-bottom: 0.15em;
@@ -458,7 +458,7 @@ type collapsedMessage struct {
 
 var _ Message = (*collapsedMessage)(nil)
 
-var collapsedCSS = cssutil.Applier("message-collapsed", `
+var collapsedCSS = lilcss.Applier("message-collapsed", `
 	.message-collapsed {
 		padding-bottom: 0.15em;
 	}

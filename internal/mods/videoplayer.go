@@ -14,7 +14,8 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/app/prefs"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 var enableMpv = prefs.NewBool(true, prefs.PropMeta{
@@ -189,7 +190,7 @@ type VideoLoadingWindow struct {
 	label   *gtk.Label
 }
 
-var videoLoadingCSS = cssutil.Applier("video-loading-window", `
+var videoLoadingCSS = lilcss.Applier("video-loading-window", `
 	.video-loading-window {
 		background: alpha(@theme_bg_color, 0.95);
 	}

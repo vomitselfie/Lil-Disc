@@ -13,9 +13,9 @@ import (
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/diamondburned/gotkit/components/onlineimage"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 var enableFriendList = prefs.NewBool(true, prefs.PropMeta{
@@ -24,7 +24,7 @@ var enableFriendList = prefs.NewBool(true, prefs.PropMeta{
 	Description: "Show a collapsible \"More\" list of friends without an active DM under the DM list. Clicking a friend opens a new DM with them.",
 })
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	/* Separated from the DM list by space and a soft rule, matching how
 	   channel categories separate their groups. */
 	.mod-friend-list-expander {

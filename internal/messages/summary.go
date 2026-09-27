@@ -10,11 +10,11 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/app/locale"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
-var summaryCSS = cssutil.Applier("message-summary-row", `
+var summaryCSS = lilcss.Applier("message-summary-row", `
 	.message-summary-row {
 		margin: 0.25em 0;
 	}
@@ -208,7 +208,7 @@ func formatSummary(state *gtkcord.State, guildID discord.GuildID, summary gatewa
 	return markups
 }
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.message-summaries-popover list {
 		background-color: transparent;
 	}

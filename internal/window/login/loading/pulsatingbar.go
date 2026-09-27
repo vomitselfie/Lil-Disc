@@ -3,7 +3,8 @@ package loading
 import (
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 type PulsatingFlags uint8
@@ -28,7 +29,7 @@ type PulsatingBar struct {
 
 const pulsateRate = 1000 / 30 // 30Hz update
 
-var pulsatingBarCSS = cssutil.Applier("loading-pulsatingbar", `
+var pulsatingBarCSS = lilcss.Applier("loading-pulsatingbar", `
 	.loading-pulsatingbar {
 		opacity: 0;
 		transition: all 0.15s ease-in-out;

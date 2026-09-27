@@ -18,10 +18,10 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/diamondburned/gotkit/components/onlineimage"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/dijama/lildisc/internal/discordident"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 var enableStickerPicker = prefs.NewBool(true, prefs.PropMeta{
@@ -30,7 +30,7 @@ var enableStickerPicker = prefs.NewBool(true, prefs.PropMeta{
 	Description: "Picker showing all available guild stickers, organized by server.",
 })
 
-var stickerPickerCSS = cssutil.Applier("mod-sticker-picker", `
+var stickerPickerCSS = lilcss.Applier("mod-sticker-picker", `
 	.mod-sticker-picker {
 		min-width: 380px;
 		min-height: 420px;

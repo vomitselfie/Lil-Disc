@@ -12,11 +12,11 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/components/onlineimage"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/diamondburned/ningen/v3/states/emoji"
 	"github.com/sahilm/fuzzy"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 
 	unicodeemoji "github.com/enescakir/emoji"
 )
@@ -136,7 +136,7 @@ type EmojiData struct {
 
 const emojiSize = 32 // px
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.autocompleter-unicode {
 		font-size: 26px;
 	}

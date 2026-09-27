@@ -20,10 +20,10 @@ import (
 	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/utils/osutil"
 	"github.com/pkg/errors"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 var persistInput = prefs.NewBool(true, prefs.PropMeta{
@@ -62,13 +62,13 @@ type Input struct {
 	guildID discord.GuildID
 }
 
-var inputCSS = cssutil.Applier("composer-input", `
+var inputCSS = lilcss.Applier("composer-input", `
 	.composer-input,
 	.composer-input text {
 		background-color: inherit;
 	}
 	.composer-input {
-		padding: 12px 2px;
+		padding: {$space_lg} {$space_hair};
 		margin-top: 0px;
 	}
 	.composer-input .autocomplete-row label {

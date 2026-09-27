@@ -5,10 +5,10 @@ import (
 
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/components/onlineimage"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/diamondburned/ningen/v3"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 // Button is a widget showing a single guild icon.
@@ -27,7 +27,7 @@ type Button struct {
 	indicator ningen.UnreadIndication
 }
 
-var buttonCSS = cssutil.Applier("sidebar-button", `
+var buttonCSS = lilcss.Applier("sidebar-button", `
 	.sidebar-button > button {
 		padding: 4px 12px;
 		border: none;
@@ -35,7 +35,7 @@ var buttonCSS = cssutil.Applier("sidebar-button", `
 		background: none;
 	}
 	.sidebar-button image {
-		background-color: @theme_bg_color;
+		background-color: @lil_surface_raised;
 	}
 	.sidebar-button > button avatar {
 		border-radius: calc({$guild_icon_size} / 2);
@@ -43,14 +43,14 @@ var buttonCSS = cssutil.Applier("sidebar-button", `
 		outline-offset: 0;
 	}
 	.sidebar-button > button:hover avatar {
-		border-radius: calc({$guild_icon_size} / 4);
-		outline: 2px solid @theme_selected_bg_color;
-		background-color: alpha(@theme_selected_bg_color, 0.35);
+		border-radius: calc({$guild_icon_size} / 3.2);
+		background-color: @lil_accent;
+		color: @lil_accent_fg;
 	}
 	.sidebar-button > button image,
 	.sidebar-button > button avatar {
-		transition: 200ms ease;
-		transition-property: all;
+		transition: 220ms cubic-bezier(0.25, 0.8, 0.25, 1);
+		transition-property: border-radius, background-color, color;
 	}
 `)
 

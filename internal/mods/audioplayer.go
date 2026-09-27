@@ -9,9 +9,10 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/app/prefs"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 
 	coreglib "github.com/diamondburned/gotk4/pkg/core/glib"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 var enableInlineAudio = prefs.NewBool(true, prefs.PropMeta{
@@ -20,7 +21,7 @@ var enableInlineAudio = prefs.NewBool(true, prefs.PropMeta{
 	Description: "Play voice messages and other audio attachments inline with a play/seek control instead of showing a download link.",
 })
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.mod-audio-player {
 		margin-top: 4px;
 		padding: 4px 6px 6px 6px;

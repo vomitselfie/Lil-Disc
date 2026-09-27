@@ -6,7 +6,8 @@ import (
 	"github.com/diamondburned/chatkit/components/secretdialog"
 	"github.com/diamondburned/chatkit/kits/secret"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 type rememberMeBox struct {
@@ -14,7 +15,7 @@ type rememberMeBox struct {
 	driver secret.Driver
 }
 
-var rememberMeCSS = cssutil.Applier("login-rememberme", `
+var rememberMeCSS = lilcss.Applier("login-rememberme", `
 	.login-rememberme {
 		margin-bottom: 4px;
 	}

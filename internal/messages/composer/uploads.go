@@ -11,8 +11,9 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/app/locale"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/dustin/go-humanize"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 const (
@@ -67,7 +68,7 @@ type uploadFile struct {
 	file *File
 }
 
-var uploadTrayCSS = cssutil.Applier("composer-upload-tray", `
+var uploadTrayCSS = lilcss.Applier("composer-upload-tray", `
 	.composer-upload-item {
 		margin: 0.25em 0.65em;
 		margin-top: 0;

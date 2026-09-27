@@ -9,8 +9,8 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 // Refactor notice
@@ -52,7 +52,7 @@ type View struct {
 	selectID discord.ChannelID // delegate to select later
 }
 
-var viewCSS = cssutil.Applier("channels-view", `
+var viewCSS = lilcss.Applier("channels-view", `
 	.channels-viewtree {
 		background: none; /* adwaita reset */
 	}

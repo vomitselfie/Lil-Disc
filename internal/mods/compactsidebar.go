@@ -3,7 +3,7 @@ package mods
 import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app/prefs"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/signaling"
 )
 
@@ -13,7 +13,7 @@ var enableCompactSidebar = prefs.NewBool(true, prefs.PropMeta{
 	Description: "When the sidebar is narrow, show only avatars without names.",
 })
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.mod-sidebar-compact .direct-channel {
 		padding: 4px 2px;
 	}

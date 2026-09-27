@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 // LoadingPage is the busy spinner screen that's shown while the application is
@@ -21,7 +22,7 @@ type LoadingPage struct {
 	}
 }
 
-var loggingInCSS = cssutil.Applier("login-loading", `
+var loggingInCSS = lilcss.Applier("login-loading", `
 	.login-loading headerbar {
 		background: none;
 	}

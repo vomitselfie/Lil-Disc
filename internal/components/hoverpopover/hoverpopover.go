@@ -3,10 +3,11 @@ package hoverpopover
 import (
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.popover-label {
 		padding: 0 0.25em;
 	}

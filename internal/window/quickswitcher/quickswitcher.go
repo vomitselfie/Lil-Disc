@@ -10,9 +10,9 @@ import (
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/textutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 // QuickSwitcher is a search box capable of looking up guilds and channels for
@@ -37,7 +37,7 @@ type entry struct {
 	indexItem indexItem
 }
 
-var qsCSS = cssutil.Applier("quickswitcher", `
+var qsCSS = lilcss.Applier("quickswitcher", `
 	.quickswitcher-search {
 		font-size: 1.15em;
 		margin: 0;

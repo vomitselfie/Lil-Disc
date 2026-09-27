@@ -6,13 +6,14 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/chatkit/components/embed"
 	"github.com/diamondburned/gotkit/app/prefs"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 // mod: embeds — override chatkit's black background on embed images.
 // The upstream CSS sets background-color: black on .thumbnail-embed-image
 // which kills transparency for PNG emoji and other alpha images.
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.thumbnail-embed .thumbnail-embed-image {
 		background-color: transparent;
 	}

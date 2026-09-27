@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	"github.com/diamondburned/gotk4/pkg/pango"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/textutil"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.titlebar {
 		min-height: {$header_height};
 	}
@@ -34,7 +35,7 @@ var EmojiAttrs = textutil.Attrs(
 )
 
 func init() {
-	cssutil.AddCSSVariables(map[string]string{
+	lilcss.AddCSSVariables(map[string]string{
 		"header_height":        px(HeaderHeight),
 		"header_padding":       px(HeaderPadding),
 		"guild_icon_size":      px(GuildIconSize),

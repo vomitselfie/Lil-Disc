@@ -9,9 +9,9 @@ import (
 	"github.com/diamondburned/gotkit/app/locale"
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/pkg/errors"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 var askBeforeDelete = prefs.NewBool(true, prefs.PropMeta{
@@ -96,7 +96,7 @@ var collapsedMessageTimestamp = prefs.NewEnumList(
 	},
 )
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.message-blockedusers-expander {
 		margin-top: 4px;
 	}

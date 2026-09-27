@@ -4,7 +4,8 @@ import (
 	"strconv"
 
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 // MentionsIndicator is a small indicator that shows the mention count.
@@ -16,24 +17,25 @@ type MentionsIndicator struct {
 	reveal bool
 }
 
-var mentionCSS = cssutil.Applier("sidebar-mention", `
+var mentionCSS = lilcss.Applier("sidebar-mention", `
 	.sidebar-mention {
 		background: none;
 	}
 	.sidebar-mention.sidebar-mention-active,
 	.sidebar-mention.sidebar-mention-active label {
-		border-radius: 100px;
-		background-color: @theme_bg_color;
+		border-radius: {$radius_pill};
+		background-color: @lil_rail;
 	}
 	.sidebar-mention.sidebar-mention-active label {
 		color: white;
 		background-color: @mentioned;
-		min-width:  12pt;
-		min-height: 12pt;
-		padding: 0;
-		margin: 2px;
-		font-size: 8pt;
-		font-weight: bold;
+		min-width:  16px;
+		min-height: 16px;
+		padding: 0 {$space_xs};
+		margin: 3px;
+		font-size: {$font_micro};
+		font-weight: 700;
+		font-feature-settings: "tnum";
 	}
 `)
 

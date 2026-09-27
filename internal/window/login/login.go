@@ -8,9 +8,9 @@ import (
 	"github.com/diamondburned/chatkit/kits/secret"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/pkg/errors"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 // LoginController is the parent controller that Page controls.
@@ -38,7 +38,7 @@ type Page struct {
 	ctrl LoginController
 }
 
-var pageCSS = cssutil.Applier("login-page", ``)
+var pageCSS = lilcss.Applier("login-page", ``)
 
 // NewPage creates a new Page.
 func NewPage(ctx context.Context, ctrl LoginController) *Page {

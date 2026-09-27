@@ -11,8 +11,8 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/pkg/errors"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/window/login/loading"
 )
 
@@ -32,11 +32,13 @@ type Component struct {
 	page *Page
 }
 
-var componentCSS = cssutil.Applier("login-component", `
+var componentCSS = lilcss.Applier("login-component", `
 	.login-component {
-		background: mix(@theme_bg_color, @theme_fg_color, 0.05);
-		border-radius: 12px;
-		min-width: 250px;
+		background: @lil_surface_raised;
+		border: 1px solid @lil_border;
+		border-radius: {$radius_xl};
+		box-shadow: 0 12px 40px @lil_shadow;
+		min-width: 280px;
 		margin:  12px;
 		padding: 0;
 	}
@@ -62,8 +64,10 @@ var componentCSS = cssutil.Applier("login-component", `
 		margin-bottom: 8px;
 	}
 	.login-button {
-		background-color: #7289DA;
-		color: #FFFFFF;
+		background-color: @lil_accent;
+		color: @lil_accent_fg;
+		border-radius: {$radius_md};
+		font-weight: 650;
 	}
 	.login-with {
 		font-weight: bold;
@@ -243,7 +247,7 @@ type Methods struct {
 	}
 }
 
-var methodsCSS = cssutil.Applier("login-methods", `
+var methodsCSS = lilcss.Applier("login-methods", `
 	.login-methods > * {
 		margin: 0;
 	}
@@ -257,9 +261,6 @@ var methodsCSS = cssutil.Applier("login-methods", `
 	}
 	.login-methods .login-formentry {
 		margin-top: 8px;
-	}
-	.login-methods header tab:checked {
-		background-color: @accent_color;
 	}
 	.login-form-2fa {
 		margin-left: 6px;
@@ -343,7 +344,7 @@ type FormEntry struct {
 	Entry *gtk.Entry
 }
 
-var formEntryCSS = cssutil.Applier("login-formentry", ``)
+var formEntryCSS = lilcss.Applier("login-formentry", ``)
 
 // NewFormEntry creates a new FormEntry.
 func NewFormEntry(label string) *FormEntry {

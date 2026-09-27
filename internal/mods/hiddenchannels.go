@@ -5,8 +5,8 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/gotkit/app/prefs"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 var enableHiddenChannels = prefs.NewBool(false, prefs.PropMeta{
@@ -15,7 +15,7 @@ var enableHiddenChannels = prefs.NewBool(false, prefs.PropMeta{
 	Description: "Show channels you don't have access to with a lock icon, greyed out. May violate Discord's Terms of Service.",
 })
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.channel-item-hidden {
 		opacity: 0.35;
 	}

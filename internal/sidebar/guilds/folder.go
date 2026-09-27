@@ -6,7 +6,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/sidebar/sidebutton"
 )
 
@@ -38,21 +38,21 @@ type Folder struct {
 	// correctly.
 }
 
-var folderCSS = cssutil.Applier("guild-folder", `
+var folderCSS = lilcss.Applier("guild-folder", `
 	.guild-folder .guild-guild > button {
 		padding: 0px 12px;
 	}
 	.guild-folder .guild-guild > button > * {
 		padding: 4px 0;
 		transition: 200ms ease;
-		background-color: @theme_bg_color;
+		background-color: @lil_surface_sunken;
 	}
 	.guild-folder .guild-guild > button avatar {
 		padding: 0;
 	}
 	.guild-folder .guild-guild > button       avatar,
 	.guild-folder .guild-guild > button:hover avatar  {
-		background-color: @theme_bg_color;
+		background-color: @lil_surface_sunken;
 	}
 	.guild-folder .guild-guild:last-child > button {
 		padding-bottom: 4px;

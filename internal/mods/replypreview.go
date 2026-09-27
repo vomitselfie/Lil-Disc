@@ -10,8 +10,8 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/app/prefs"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 var enableReplyPreview = prefs.NewBool(true, prefs.PropMeta{
@@ -20,7 +20,7 @@ var enableReplyPreview = prefs.NewBool(true, prefs.PropMeta{
 	Description: "Show a preview bar above the composer when replying to a message.",
 })
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.mod-reply-bar {
 		padding: 4px 12px;
 		border-bottom: 1px solid alpha(@borders, 0.5);

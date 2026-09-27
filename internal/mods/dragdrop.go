@@ -15,7 +15,8 @@ import (
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app/prefs"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 var enableDragDrop = prefs.NewBool(true, prefs.PropMeta{
@@ -24,7 +25,7 @@ var enableDragDrop = prefs.NewBool(true, prefs.PropMeta{
 	Description: "Enable drag-and-drop file upload onto the message area.",
 })
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.mod-drag-target:drop(active) {
 		outline: 2px dashed @accent_color;
 		outline-offset: -2px;

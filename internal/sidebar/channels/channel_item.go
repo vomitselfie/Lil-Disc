@@ -12,12 +12,12 @@ import (
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/app/locale"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/diamondburned/ningen/v3"
 	"github.com/diamondburned/ningen/v3/states/read"
 	"github.com/dijama/lildisc/internal/components/hoverpopover"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/mods"
 	"github.com/dijama/lildisc/internal/signaling"
 )
@@ -71,7 +71,7 @@ func channelIDFromItem(item *glib.Object) discord.ChannelID {
 	return discord.ChannelID(id)
 }
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.channels-viewtree row:hover,
 	.channels-viewtree row:selected {
 		background: none;
@@ -126,8 +126,8 @@ var _ = cssutil.WriteCSS(`
 	.channel-item-unread .channel-unread-indicator,
 	.channel-item-mentioned .channel-unread-indicator {
 		font-size: 0.7em;
-		font-weight: 900;
-		font-family: monospace;
+		font-weight: 800;
+		font-feature-settings: "tnum";
 
 		min-width: 1em;
 		min-height: 1em;
@@ -347,7 +347,7 @@ func (i *channelItem) updateIndicator(unread ningen.UnreadIndication) {
 	}
 }
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.channel-item-unknown {
 		opacity: 0.35;
 		font-style: italic;
@@ -370,7 +370,7 @@ func newUnknownChannelItem(name string) gtk.Widgetter {
 	return box
 }
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.channel-item-thread {
 		padding: {$space_xs} 0;
 	}
@@ -430,7 +430,7 @@ func newChannelItemText(ch *discord.Channel) gtk.Widgetter {
 	return box
 }
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.channel-item-forum {
 		padding: 0.35em 0;
 	}
@@ -458,7 +458,7 @@ func newChannelItemForum(ch *discord.Channel, row *gtk.TreeListRow) gtk.Widgette
 	return expander
 }
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	/* Categories separate groups with space above them rather than a rule. */
 	.channels-viewtree row:not(:first-child) .channel-item-category-outer {
 		margin-top: {$space_lg};
@@ -536,7 +536,7 @@ func newChannelItemCategory(ch *discord.Channel, row *gtk.TreeListRow, reveal *a
 	return expander
 }
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.channel-item-voice .mauthor-chip {
 		margin: 0.15em 0;
 		margin-left: 2.5em;

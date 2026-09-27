@@ -17,9 +17,9 @@ import (
 	"github.com/diamondburned/gotkit/app/locale"
 	"github.com/diamondburned/gotkit/components/onlineimage"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 type messageReaction struct {
@@ -49,7 +49,7 @@ type contentReactions struct {
 	reactions *gioutil.ListModel[messageReaction]
 }
 
-var reactionsCSS = cssutil.Applier("message-reactions", `
+var reactionsCSS = lilcss.Applier("message-reactions", `
 	.message-reactions {
 		padding: 0;
 		margin-top: 4px;
@@ -225,7 +225,7 @@ type contentReaction struct {
 	tooltipState reactionsLoadState
 }
 
-var reactionCSS = cssutil.Applier("message-reaction", `
+var reactionCSS = lilcss.Applier("message-reaction", `
 	/* Reaction pills were previously unstyled beyond zeroing their metrics,
 	   so they fell back to stock GTK toggle buttons: square, heavy, and
 	   nothing like the rest of the message. */

@@ -11,9 +11,9 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app/locale"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/ningen/v3/states/read"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/mods"
 )
 
@@ -40,7 +40,7 @@ type ChannelView struct {
 	selectID discord.ChannelID // delegate to be selected later
 }
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.direct-searchbar > revealer > box {
 		border-bottom: 0;
 		background: none;

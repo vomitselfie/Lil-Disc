@@ -15,8 +15,9 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/diamondburned/gotkit/components/onlineimage"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
+
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 var enableGifPicker = prefs.NewBool(true, prefs.PropMeta{
@@ -25,7 +26,7 @@ var enableGifPicker = prefs.NewBool(true, prefs.PropMeta{
 	Description: "GIF search picker using Tenor, same as Discord's built-in GIF tab.",
 })
 
-var gifPickerCSS = cssutil.Applier("mod-gif-picker", `
+var gifPickerCSS = lilcss.Applier("mod-gif-picker", `
 	.mod-gif-picker {
 		min-width: 380px;
 		min-height: 420px;

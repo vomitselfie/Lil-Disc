@@ -8,9 +8,9 @@ import (
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/components/onlineimage"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 const (
@@ -27,7 +27,7 @@ type Banner struct {
 	gID     discord.GuildID
 }
 
-var bannerCSS = cssutil.Applier("channels-banner", `
+var bannerCSS = lilcss.Applier("channels-banner", `
 	.channels-banner-shadow {
 		transition: all 0.25s;
 	}

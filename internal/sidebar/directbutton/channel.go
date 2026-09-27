@@ -6,9 +6,9 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/ningen/v3"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/sidebar/sidebutton"
 )
 
@@ -17,7 +17,7 @@ type ChannelButton struct {
 	id discord.ChannelID
 }
 
-var channelCSS = cssutil.Applier("dmbutton-channel", `
+var channelCSS = lilcss.Applier("dmbutton-channel", `
 `)
 
 func NewChannelButton(ctx context.Context, id discord.ChannelID) *ChannelButton {

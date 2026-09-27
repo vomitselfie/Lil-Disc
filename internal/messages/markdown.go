@@ -11,13 +11,13 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/components/onlineimage"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/diamondburned/gotkit/gtkutil/textutil"
 	"github.com/diamondburned/ningen/v3/discordmd"
 	"github.com/yuin/goldmark/ast"
 	"libdb.so/ctxt"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 type markdownState struct {
@@ -98,7 +98,7 @@ var htmlTagMap = map[discordmd.Attribute]string{
 	discordmd.AttrMonospace:     "code",
 }
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.md-spoiler {
 		color: mix(@theme_bg_color, black, 0.11);
 	}

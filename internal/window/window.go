@@ -11,10 +11,10 @@ import (
 	"github.com/diamondburned/gotkit/app"
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/pkg/errors"
 	"libdb.so/ctxt"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/mods"
 	"github.com/dijama/lildisc/internal/window/login"
 	"github.com/dijama/lildisc/internal/window/quickswitcher"
@@ -187,7 +187,7 @@ func (w *Window) setStatus(status discord.Status) {
 	})
 }
 
-var emptyHeaderCSS = cssutil.Applier("empty-header", `
+var emptyHeaderCSS = lilcss.Applier("empty-header", `
 	.empty-header {
 		min-height: 0;
 		min-width: 0;

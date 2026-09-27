@@ -18,8 +18,8 @@ import (
 	"github.com/diamondburned/gotkit/components/logui"
 	"github.com/diamondburned/gotkit/components/prefui"
 	"github.com/diamondburned/gotkit/gtkutil"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/mods"
 	"github.com/dijama/lildisc/internal/window"
 	"github.com/dijama/lildisc/internal/window/about"
@@ -41,7 +41,7 @@ var Version string
 
 func init() { about.SetVersion(Version) }
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	window.background,
 	window.background.solid-csd {
 		background-color: @theme_bg_color;
@@ -219,6 +219,9 @@ func (m *manager) activate(ctx context.Context) {
 		m.win.Present()
 		return
 	}
+
+	// Before the window exists, so it never paints in the host theme first.
+	gtkcord.InitTheme()
 
 	m.win = window.NewWindow(ctx)
 	m.win.Present()

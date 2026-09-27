@@ -7,9 +7,9 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/components/onlineimage"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/sidebar/sidebutton"
 )
 
@@ -36,7 +36,7 @@ var folderIconMatrix = [4][2]int{
 	{1, 1},
 }
 
-var folderButtonCSS = cssutil.Applier("guild-folderbutton", `
+var folderButtonCSS = lilcss.Applier("guild-folderbutton", `
 	.guild-folderbutton {
 		padding:  0 12px; /* reset styling */
 		padding-top: 8px;

@@ -24,6 +24,7 @@ import (
 	"github.com/diamondburned/ningen/v3/discordmd"
 	"github.com/dustin/go-humanize"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/mods"
 )
 
@@ -95,7 +96,7 @@ func resizeURL(directURL, proxyURL string, w, h int) string {
 	return u.String()
 }
 
-var stickerCSS = cssutil.Applier("message-sticker", `
+var stickerCSS = lilcss.Applier("message-sticker", `
 	.message-sticker {
 		border-radius: 0;
 	}
@@ -131,7 +132,7 @@ func newSticker(ctx context.Context, sticker *discord.StickerItem) gtk.Widgetter
 	}
 }
 
-var _ = cssutil.WriteCSS(`
+var _ = lilcss.WriteCSS(`
 	.message-richframe:not(:first-child) {
 		margin-top: 4px;
 	}
@@ -140,13 +141,14 @@ var _ = cssutil.WriteCSS(`
 	}
 `)
 
-var messageAttachmentCSS = cssutil.Applier("message-attachment", `
+var messageAttachmentCSS = lilcss.Applier("message-attachment", `
 	.message-attachment-filename {
 		padding-left: 0.35em;
 		padding-right: 0.35em;
 	}
 	.message-attachment-filesize {
-		color: alpha(@theme_fg_color, 0.75);
+		color: @lil_text_dim;
+		font-feature-settings: "tnum";
 	}
 `)
 
@@ -296,7 +298,7 @@ func mimeIcon(mimePrefix string) string {
 	}
 }
 
-var normalEmbedCSS = cssutil.Applier("message-normalembed", `
+var normalEmbedCSS = lilcss.Applier("message-normalembed", `
 	@define-color lildisc_embed_background @lil_surface_raised;
 
 	/* The accent stripe is drawn as a gradient rather than a border, so the
@@ -304,7 +306,7 @@ var normalEmbedCSS = cssutil.Applier("message-normalembed", `
 	   Reserving it unconditionally keeps coloured and uncoloured embeds on
 	   the same left edge; they used to differ by 4px. */
 	.message-normalembed {
-		border: none;
+		border: 1px solid @lil_border;
 		border-radius: {$radius_lg};
 		padding: {$space_lg};
 		padding-left: {$space_xl};
@@ -325,8 +327,8 @@ var normalEmbedCSS = cssutil.Applier("message-normalembed", `
 		margin-right: 0.5em;
 	}
 	.message-embed-footer {
-		opacity: 0.5;
-		font-size: 0.8em;
+		color: @lil_text_faint;
+		font-size: {$font_small};
 	}
 `)
 

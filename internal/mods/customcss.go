@@ -41,7 +41,9 @@ func initCustomCSS(ctx context.Context) {
 		gtk.StyleContextAddProviderForDisplay(
 			display,
 			provider,
-			gtk.STYLE_PROVIDER_PRIORITY_USER,
+			// Above LilDisc's own theme, which sits at USER+100 and
+			// USER+110, so custom.css can still override anything.
+			gtk.STYLE_PROVIDER_PRIORITY_USER+200,
 		)
 		slog.Info("loaded custom CSS", "path", cssPath)
 	}

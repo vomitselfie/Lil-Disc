@@ -1,6 +1,10 @@
 package gtkcord
 
-import "github.com/diamondburned/gotkit/gtkutil/cssutil"
+import (
+	"github.com/diamondburned/gotkit/gtkutil/cssutil"
+
+	"github.com/dijama/lildisc/internal/lilcss"
+)
 
 // This file holds LilDisc's design tokens. Widget stylesheets are expected to
 // reference these rather than inventing values, so that spacing, corner radii
@@ -37,7 +41,8 @@ const (
 const (
 	RadiusSM   = 4   // chips, badges, inline media
 	RadiusMD   = 6   // rows, buttons
-	RadiusLG   = 8   // cards, popovers, embeds
+	RadiusLG   = 8   // cards, embeds, inputs
+	RadiusXL   = 12  // popovers, boxed lists, floating surfaces
 	RadiusPill = 999 // fully rounded
 )
 
@@ -82,8 +87,14 @@ const (
 // so the app follows the system (and Discord's) light/dark preference instead
 // of only looking right in one of them. Widgets should use these names, not
 // @theme_* directly, so that a change here reaches the whole app.
+//
+// These are the fallback used when LilDisc's own theme (palette.go) is turned
+// off. They go straight to cssutil rather than through lilcss, because lilcss
+// reinstalls its stylesheets above the theme's palette, and these
+// definitions would then override it.
 var _ = cssutil.WriteCSS(`
 	/* Surfaces, from furthest back to closest to the user. */
+	@define-color lil_rail             mix(@theme_bg_color, black, 0.24);
 	@define-color lil_surface          @theme_bg_color;
 	@define-color lil_surface_sunken   mix(@theme_bg_color, black, 0.16);
 	@define-color lil_surface_raised   mix(@theme_bg_color, white, 0.05);
@@ -105,7 +116,10 @@ var _ = cssutil.WriteCSS(`
 	@define-color lil_active    alpha(@theme_fg_color, 0.10);
 	@define-color lil_selected  alpha(@theme_selected_bg_color, 0.22);
 
-	@define-color lil_accent    @theme_selected_bg_color;
+	@define-color lil_accent      @theme_selected_bg_color;
+	@define-color lil_accent_text @theme_selected_bg_color;
+	@define-color lil_accent_fg   @theme_selected_fg_color;
+	@define-color lil_shadow      alpha(black, 0.35);
 	@define-color lil_mention   alpha(@theme_selected_bg_color, 0.18);
 
 	/* Discord's status palette. Defined here rather than in the presence mod
@@ -122,7 +136,7 @@ var _ = cssutil.WriteCSS(`
 `)
 
 func init() {
-	cssutil.AddCSSVariables(map[string]string{
+	lilcss.AddCSSVariables(map[string]string{
 		"space_hair": px(SpaceHair),
 		"space_xs":   px(SpaceXS),
 		"space_sm":   px(SpaceSM),
@@ -134,6 +148,7 @@ func init() {
 		"radius_sm":   px(RadiusSM),
 		"radius_md":   px(RadiusMD),
 		"radius_lg":   px(RadiusLG),
+		"radius_xl":   px(RadiusXL),
 		"radius_pill": px(RadiusPill),
 
 		"row_height": px(RowHeight),

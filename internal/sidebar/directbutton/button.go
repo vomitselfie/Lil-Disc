@@ -5,8 +5,8 @@ import (
 	"math"
 
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 	"github.com/dijama/lildisc/internal/sidebar/sidebutton"
 )
 
@@ -18,7 +18,7 @@ type Button struct {
 	ctx context.Context
 }
 
-var dmButtonCSS = cssutil.Applier("sidebar-dm-button-overlay", `
+var dmButtonCSS = lilcss.Applier("sidebar-dm-button-overlay", `
 	.sidebar-dm-button {
 		padding: {$space_xs} {$space_lg};
 		border-radius: 0;

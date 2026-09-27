@@ -15,10 +15,10 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotkit/app/prefs"
 	"github.com/diamondburned/gotkit/components/onlineimage"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/diamondburned/gotkit/gtkutil/imgutil"
 	"github.com/sahilm/fuzzy"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 var enableEmojiPicker = prefs.NewBool(true, prefs.PropMeta{
@@ -33,7 +33,7 @@ var enableFakeNitro = prefs.NewBool(false, prefs.PropMeta{
 	Description: "Send external server emojis as image URLs when you don't have Nitro. May violate Discord's Terms of Service.",
 })
 
-var emojiPickerCSS = cssutil.Applier("mod-emoji-picker", `
+var emojiPickerCSS = lilcss.Applier("mod-emoji-picker", `
 	.mod-emoji-picker {
 		min-width: 340px;
 		min-height: 400px;

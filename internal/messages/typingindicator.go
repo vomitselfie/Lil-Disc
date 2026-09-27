@@ -12,8 +12,8 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 	"github.com/diamondburned/gotk4/pkg/pango"
 	"github.com/diamondburned/gotkit/app/locale"
-	"github.com/diamondburned/gotkit/gtkutil/cssutil"
 	"github.com/dijama/lildisc/internal/gtkcord"
+	"github.com/dijama/lildisc/internal/lilcss"
 )
 
 const typerTimeout = 10 * time.Second
@@ -39,7 +39,7 @@ type typingTyper struct {
 	When       discord.UnixTimestamp
 }
 
-var typingIndicatorCSS = cssutil.Applier("messages-typing-indicator", `
+var typingIndicatorCSS = lilcss.Applier("messages-typing-indicator", `
 	.messages-typing-box {
 		padding: 1px 15px;
 		font-size: 0.85em;
@@ -218,7 +218,7 @@ func renderTypingMarkup(typers []typingTyper) string {
 	}
 }
 
-var breathingDotsCSS = cssutil.Applier("messages-breathing-dots", `
+var breathingDotsCSS = lilcss.Applier("messages-breathing-dots", `
 	@keyframes messages-breathing {
 		0% {   opacity: 0.66; }
 		100% { opacity: 0.12; }
