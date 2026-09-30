@@ -368,6 +368,8 @@ func NewView(ctx context.Context, chID discord.ChannelID) *View {
 				key := messageKeyNonce(ev.Nonce)
 
 				if msg, ok := v.rows[key]; ok {
+					wasBottomed := v.Scroll.IsBottomed()
+
 					delete(v.rows, key)
 
 					key = messageKeyID(ev.ID)
@@ -376,6 +378,8 @@ func NewView(ctx context.Context, chID discord.ChannelID) *View {
 
 					msg.ListBoxRow.SetName(string(key))
 					msg.message.Update(ev)
+
+					v.keepBottomed(wasBottomed)
 					return
 				}
 			}
@@ -386,8 +390,12 @@ func NewView(ctx context.Context, chID discord.ChannelID) *View {
 			}
 
 			if !v.ignoreMessage(&ev.Message) {
+				wasBottomed := v.Scroll.IsBottomed()
+
 				msg := v.upsertMessage(ev.ID, newMessageInfo(&ev.Message), 0)
 				msg.Update(ev)
+
+				v.keepBottomed(wasBottomed)
 			}
 
 		case *gateway.MessageUpdateEvent:
@@ -1386,6 +1394,43 @@ func (v *View) jumpTo(id discord.MessageID, highlight bool) {
 					v.MarkRead()
 				}
 			})
+		}
+	})
+}
+
+// keepBottomed re-asserts the scroll position at the bottom of the list,
+// once GTK has settled the layout for whatever was just added, if the view
+// was at the bottom before that addition.
+//
+// gotkit's autoscroll.Window already tries to stay stuck to the bottom on
+// its own: it watches the scroll adjustment's "changed" signal (fired for
+// both content-height and viewport-height changes) and re-scrolls while it
+// believes it is still bottomed, deferring the actual scroll to the next
+// idle tick. That covers most cases, including the composer or a reply bar
+// growing at the same time as a message arrives. But it is a chain of
+// heuristics reacting to signals rather than a guarantee, and the composer,
+// the reply bar and the upload tray can all resize the message list's
+// viewport (an animated GtkRevealer among them) independently of any
+// message being appended — there is room for a message to land while that
+// settling is mid-flight and end up a few pixels short of the true bottom,
+// tucked behind the composer until the user scrolls by hand.
+//
+// This adds a deterministic backstop specifically for the moment a message
+// actually lands: deferring with glib.IdleAdd lets GTK's own layout pass
+// for this frame finish first, so the corrective call below reads the
+// final, settled page size and content height rather than a value that
+// might still be moving. Checking wasBottomed against the state from
+// before the new content was added — not after — keeps this from yanking
+// the view down if the user had actually scrolled up to read history;
+// IsBottomed() read right after inserting a row would not reliably tell
+// the two cases apart.
+func (v *View) keepBottomed(wasBottomed bool) {
+	if !wasBottomed {
+		return
+	}
+	glib.IdleAdd(func() {
+		if !v.detached {
+			v.Scroll.ScrollToBottom()
 		}
 	})
 }
