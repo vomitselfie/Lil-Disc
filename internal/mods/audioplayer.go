@@ -15,6 +15,7 @@ import (
 	coreglib "github.com/diamondburned/gotk4/pkg/core/glib"
 
 	"github.com/vomitselfie/Lil-Disc/internal/lilcss"
+	"github.com/vomitselfie/Lil-Disc/internal/mediaqueue"
 )
 
 var enableInlineAudio = prefs.NewBool(true, prefs.PropMeta{
@@ -69,7 +70,7 @@ func IsAudioAttachment(a *discord.Attachment) bool {
 // supports Range requests more reliably than the raw CDN.
 //
 // Building the GtkMediaFile itself is what starts its GStreamer pipeline,
-// so that part is deferred through queueAudioPipeline rather than done
+// so that part is deferred through mediaqueue.Run rather than done
 // synchronously here; see its doc comment for why. A spinner placeholder
 // fills in for the controls until this player's turn comes up, which is
 // normally within a frame or two.
@@ -117,7 +118,7 @@ func NewAudioPlayer(ctx context.Context, a *discord.Attachment) gtk.Widgetter {
 	box.Append(header)
 	box.Append(placeholder)
 
-	queueAudioPipeline(func(done func()) {
+	mediaqueue.Run(func(done func()) {
 		// The player may have been destroyed (message deleted, scrolled
 		// out and pruned) while it was waiting its turn in the queue.
 		if box.Parent() == nil && !box.Mapped() && !box.Realized() {
@@ -170,52 +171,4 @@ func NewAudioPlayer(ctx context.Context, a *discord.Attachment) gtk.Widgetter {
 	})
 
 	return box
-}
-
-// audioPipelineQueue serializes GStreamer pipeline creation for inline
-// audio players.
-//
-// GTK4's built-in GStreamer media backend (what GtkMediaFile uses) is
-// built on playbin3/decodebin3. decodebin3 has a known crash when more
-// than one instance is going through its initial stream setup in the
-// same process at once — upstream, the assertion is
-// "mq_slot_handle_stream_start: assertion failed: (collection)" in
-// gstdecodebin3.c. It aborts the whole process outright: not a Go panic,
-// not a GError, nothing a defer/recover or an error check can catch.
-//
-// Opening a DM or channel with more than one audio attachment used to
-// build every GtkMediaFile synchronously in the same render pass, so
-// their pipelines all started initializing at once — exactly that
-// trigger. Building them one at a time, only starting the next once the
-// previous has finished initializing (or errored, or timed out), keeps
-// two pipelines from ever being mid-setup together.
-var audioPipelineQueue struct {
-	mu      sync.Mutex
-	pending []func(done func())
-	busy    bool
-}
-
-func queueAudioPipeline(start func(done func())) {
-	audioPipelineQueue.mu.Lock()
-	defer audioPipelineQueue.mu.Unlock()
-
-	audioPipelineQueue.pending = append(audioPipelineQueue.pending, start)
-	if !audioPipelineQueue.busy {
-		audioPipelineQueue.busy = true
-		glib.IdleAdd(runNextAudioPipeline)
-	}
-}
-
-func runNextAudioPipeline() {
-	audioPipelineQueue.mu.Lock()
-	if len(audioPipelineQueue.pending) == 0 {
-		audioPipelineQueue.busy = false
-		audioPipelineQueue.mu.Unlock()
-		return
-	}
-	next := audioPipelineQueue.pending[0]
-	audioPipelineQueue.pending = audioPipelineQueue.pending[1:]
-	audioPipelineQueue.mu.Unlock()
-
-	next(func() { glib.IdleAdd(runNextAudioPipeline) })
 }

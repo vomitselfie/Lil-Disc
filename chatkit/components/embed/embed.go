@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
@@ -30,6 +31,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
 	"github.com/vomitselfie/Lil-Disc/chatkit/components/progress"
+	"github.com/vomitselfie/Lil-Disc/internal/mediaqueue"
 
 	coreglib "github.com/diamondburned/gotk4/pkg/core/glib"
 )
@@ -654,17 +656,47 @@ func (vi *extraVideoEmbed) downloadVideo(e *Embed) {
 		}
 
 		return func() {
-			cleanup()
-			vi.progress.Hide()
+			// Building the GtkMediaFile is what starts its GStreamer
+			// pipeline, so that part goes through mediaqueue.Run rather
+			// than happening here directly; see its doc comment for why.
+			// The progress indicator stays up (it was already showing
+			// for the download) until this embed's turn comes around,
+			// which in the common case — nothing else mid-setup — is
+			// within a frame or two.
+			//
+			// cleanup (which clears isBusy) waits until then too: isBusy
+			// is what stops a second click re-downloading and re-queueing
+			// the same embed while it's already waiting its turn, and
+			// vi.media isn't set until this callback runs.
+			mediaqueue.Run(func(done func()) {
+				cleanup()
+				vi.progress.Hide()
 
-			media := gtk.NewMediaFileForFilename(file)
-			media.SetLoop(e.opts.Type.IsLooped())
-			media.SetMuted(e.opts.Type.IsMuted())
-			vi.media = media
-			vi.watchPlaybackError(e, media)
+				media := gtk.NewMediaFileForFilename(file)
+				media.SetLoop(e.opts.Type.IsLooped())
+				media.SetMuted(e.opts.Type.IsMuted())
+				vi.media = media
+				vi.watchPlaybackError(e, media)
 
-			vi.loaded(vi)
-			vi.loaded = nil
+				vi.loaded(vi)
+				vi.loaded = nil
+
+				var once sync.Once
+				finish := func() { once.Do(done) }
+				media.NotifyProperty("prepared", func() {
+					if media.IsPrepared() {
+						finish()
+					}
+				})
+				media.NotifyProperty("error", func() {
+					if media.Error() != nil {
+						finish()
+					}
+				})
+				// Safety net: don't stall the queue behind a file that
+				// never reports either.
+				glib.TimeoutSecondsAdd(5, func() { finish() })
+			})
 		}
 	})
 }
