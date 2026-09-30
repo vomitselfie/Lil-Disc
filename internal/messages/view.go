@@ -1319,6 +1319,11 @@ func (v *View) JumpTo(id discord.MessageID) {
 func (v *View) jumpTo(id discord.MessageID, highlight bool) {
 	if row, ok := v.rows[messageKeyID(id)]; ok {
 		v.focusRow(row, highlight)
+		// Deferred: right after a fresh channel switch the window may not
+		// yet register as active/mapped for a frame or two (e.g. a
+		// notification click racing the window being raised), and
+		// IsActive() would read stale.
+		glib.IdleAdd(func() { v.markReadIfLatest(id) })
 		return
 	}
 
@@ -1375,9 +1380,33 @@ func (v *View) jumpTo(id discord.MessageID, highlight bool) {
 			}
 			// Focus once the rows have been allocated, or the scroll has
 			// nowhere to go.
-			glib.IdleAdd(func() { v.focusRow(row, highlight) })
+			glib.IdleAdd(func() {
+				v.focusRow(row, highlight)
+				if reachesPresent && v.IsActive() {
+					v.MarkRead()
+				}
+			})
 		}
 	})
+}
+
+// markReadIfLatest marks the channel read if id is the newest message this
+// view knows about. JumpTo's fast path (the message is already rendered)
+// only repositions the scroll and grabs focus — unlike opening a channel
+// fresh, nothing along that path reaches the bottom of the scroll view, so
+// the usual "scrolled to bottom" mark-as-read never fires. That left
+// notifications, message links and search results landing on the latest
+// message without clearing its unread indicator until the channel was
+// reopened some other way.
+func (v *View) markReadIfLatest(id discord.MessageID) {
+	if !v.IsActive() {
+		return
+	}
+	state := gtkcord.FromContext(v.ctx)
+	msgs, _ := state.Cabinet.Messages(v.chID)
+	if len(msgs) > 0 && msgs[0].ID == id {
+		v.MarkRead()
+	}
 }
 
 // focusRow scrolls to the row and, when asked, highlights it for a moment,
